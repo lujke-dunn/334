@@ -1,0 +1,46 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/webp" href="/frontend/public/favicon.webp">
+  <link rel="stylesheet" href="signup.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="A website for CSCI334's group project.">
+  <title>Signup</title>
+</head>
+
+<body>
+  <main>
+    <article>
+      <form action="login.html" method="POST">
+        <h1>Sign up</h1>
+
+        <input type="text" id="fname" name="fname" placeholder="First Name" class="user-info" required><br>
+        <input type="text" id="lname" name="lname" placeholder="Last Name" class="user-info" required><br>
+        <input type="email" id="email" name="email" placeholder="Email" class="user-info" required><br><br>
+
+        <input type="text" id="street-address" name="street-address" placeholder="Street Address" class="user-info" required><br>
+        <input type="text" id="city" name="city" placeholder="City" class="user-info" required><br>
+        <input type="text" id="state" name="state" placeholder="State" class="user-info" required><br>
+        <input type="text" id="postal-code" name="postal-code" placeholder="Postal Code" class="user-info" required><br>
+        <input type="text" id="country" name="country" placeholder="Country" class="user-info" required><br><br>
+
+        <input type="password" id="password" name="password" placeholder="Password" class="user-info" required><br>
+
+        <section>
+          <input type="radio" id="customer" name="user-type" value="customer" class="user-type-input" required>
+          <label for="customer" class="user-type-label">Customer</label>
+        
+          <input type="radio" id="contractor" name="user-type" value="contractor" class="user-type-input" required>
+          <label for="contractor" class="user-type-label">Contractor</label>
+        </section><br>
+
+        <button type="submit" value="login">Sign Up</button>
+      </form>
+    </article>
+  </main>
+</body>
+</html>

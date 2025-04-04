@@ -1,0 +1,42 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <link rel="icon" type="image/webp" href="/frontend/public/favicon.webp">
+  <link rel="stylesheet" href="login.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Inter:wght@100..900&display=swap" rel="stylesheet">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <meta name="description" content="A website for CSCI334's group project.">
+  <title>Login</title>
+</head>
+
+<body>
+  <main class="container">
+    <aside class="image">
+      <figure>
+        <img src="/frontend/public/images/login.webp" alt="Family walking a dog">
+      </figure>
+    </aside>
+
+    <article class="login">
+      
+
+      <h1>Login</h1>
+
+      <form action="dashboard.html" method="POST">
+        <input type="username" id="username" name="username" placeholder="Username" class="user-info" required><br>
+        <input type="password" id="password" name="password" placeholder="Password" class="user-info" required><br>
+        <input type="checkbox" id="remember" name="remember">
+        <label for="remember">Remember me</label>
+        <button type="submit" value="dashboard">Sign In</button>
+      </form>
+
+      <form action="signup.html" method="POST">
+        <button type="submit" value="signup" id="signup">Sign up</button>
+      </form>
+    </article>
+  </main>
+</body>
+</html>

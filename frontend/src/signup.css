@@ -1,0 +1,85 @@
+html {
+  font-size: 16px;
+  font-family: "Inter", sans-serif;
+}
+
+body {
+  background-color: #242424;
+  color: #ffffff;
+  text-align: center;
+}
+
+form {
+  border: 1px solid #3a3a3a;
+  width: 27rem;
+  margin: 2rem auto;
+  padding: 1.5rem;
+}
+
+.user-info {
+  width: 25rem;
+  height: 2.5rem;
+  padding-left: 0.625rem;
+  margin: 0.5rem;
+  font-size: 1rem;
+  font-family: "Inter", sans-serif;
+  background-color: #242424;
+  border: 0.0625rem solid #3a3a3a;
+  color: white;
+}
+
+.user-info::placeholder {
+  color: #a4a5a6;
+}
+
+.user-info:focus {
+  outline: none;
+  border: 0.0625rem solid #578cf5;
+}
+
+.user-info:hover {
+  background-color: #272727;
+  transition: all 0.7s;
+}
+
+button:hover {
+  cursor: pointer;
+  background-color: #4972c4;
+  border: 0.25vw solid #4972c4;
+}
+
+button {
+  width: 25.9rem;
+  transition: all 0.2s;
+  height: 3rem;
+  margin-bottom: 2rem;
+  font-size: 1rem;
+  font-family: "Inter", sans-serif;
+  background-color: #578cf5;
+  border: 0.0625rem solid #578cf5;
+  color: white;
+}
+
+section {
+  display: flex;
+  margin-top: 0.6rem;
+  margin-bottom: 1rem;
+  justify-content: center;
+}
+
+.user-type-label {
+  padding: 0.6rem;
+  width: 11.65rem;
+  border: 0.0625rem solid #3a3a3a;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.user-type-input {
+  display: none;
+}
+
+.user-type-input:checked + .user-type-label {
+  background-color: #d69d47;
+  color: white;
+}
