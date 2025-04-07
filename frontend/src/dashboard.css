@@ -1,14 +1,14 @@
 html {
-  font-size: 16px;
+  font-size: 1rem;
   font-family: "Inter", sans-serif;
 }
 
 body {
   background-color: #242424;
   color: #ffffff;
-  margin-top: 80px;
-  margin-left: 32px;
-  margin-right: 32px;
+  margin-top: 5rem;
+  margin-left: 2rem;
+  margin-right: 2rem;
 }
 
 nav {
@@ -17,15 +17,15 @@ nav {
   left: 0;
   width: 100%;
   background: #242424;
-  padding: 10px 0;
-  border-bottom: 1px solid #3a3a3a;
+  padding: 0.625rem 0;
+  border-bottom: 0.0625rem solid #3a3a3a;
   z-index: 1000;
 }
 
 .navigation {
-  width: 36px;
-  height: 36px;
-  margin-right: 20px;
+  width: 2.25rem;
+  height: 2.25rem;
+  margin-right: 1.25rem;
 }
 
 ul {
@@ -34,7 +34,7 @@ ul {
   align-items: center;
   list-style: none;
   margin: 0;
-  padding: 0 20px;
+  padding: 0 1.25rem;
 }
 
 ul li {
@@ -45,7 +45,7 @@ ul li {
 ul li a {
   color: white;
   text-decoration: none;
-  font-size: 18px;
+  font-size: 1.125rem;
 }
 
 .signout:hover {
@@ -55,10 +55,10 @@ ul li a {
 }
 
 .search {
-  width: 300px;
-  height: 36px;
-  padding-left: 0.625rem;
-  margin-bottom: 16px;
+  width: 18.75rem;
+  height: 2.25rem;
+  padding-left: 0.625rem; 
+  margin-bottom: 1rem;
   font-size: 1rem;
   font-family: "Inter", sans-serif;
   background-color: #242424;
@@ -81,18 +81,18 @@ ul li a {
 }
 
 .location {
-  width: 24px;
-  height: 24px;
-  margin-right: 8px;
-  margin-bottom: 2px;
-  margin-left: 20px;
+  width: 1.5rem;
+  height: 1.5rem;
+  margin-right: 0.5rem;
+  margin-bottom: 0.125rem;
+  margin-left: 1.25rem;
 }
 
 .services {
   display: grid;
   grid-template-columns: repeat(5, 1fr);
-  gap: 20px;
-  padding: 20px;
+  gap: 1.25rem;
+  padding: 1.25rem;
   text-align: center;
 }
 
@@ -102,17 +102,17 @@ ul li a {
 
 .services img {
   width: 50%;
-  border-radius: 8px;
+  border-radius: 0.5rem;
 }
 
 .services figcaption {
-  margin-top: 8px;
-  font-size: 16px;
+  margin-top: 0.5rem;
+  font-size: 1rem;
   color: white;
 }
 
 .star {
   color: gold;
-  font-size: 18px;
-  margin: 0 2px;
+  font-size: 1.125rem;
+  margin: 0 0.125rem;
 }
