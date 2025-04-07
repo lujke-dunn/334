@@ -1,6 +1,118 @@
-body {
-  color: black;
-  font-family: "Inter", sans-serif;
+html {
   font-size: 16px;
+  font-family: "Inter", sans-serif;
+}
+
+body {
+  background-color: #242424;
+  color: #ffffff;
+  margin-top: 80px;
+  margin-left: 32px;
+  margin-right: 32px;
+}
+
+nav {
+  position: fixed;
+  top: 0;
+  left: 0;
+  width: 100%;
+  background: #242424;
+  padding: 10px 0;
+  border-bottom: 1px solid #3a3a3a;
+  z-index: 1000;
+}
+
+.navigation {
+  width: 36px;
+  height: 36px;
+  margin-right: 20px;
+}
+
+ul {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  list-style: none;
+  margin: 0;
+  padding: 0 20px;
+}
+
+ul li {
+  display: flex;
+  align-items: center;
+}
+
+ul li a {
+  color: white;
+  text-decoration: none;
+  font-size: 18px;
+}
+
+.signout:hover {
+  cursor: pointer;
+  color: #578cf5;
+  transition: all 0.2s;
+}
+
+.search {
+  width: 300px;
+  height: 36px;
+  padding-left: 0.625rem;
+  margin-bottom: 16px;
+  font-size: 1rem;
+  font-family: "Inter", sans-serif;
+  background-color: #242424;
+  border: 0.0625rem solid #3a3a3a;
+  color: white;
+}
+
+.search::placeholder {
+  color: #a4a5a6;
+}
+
+.search:focus {
+  outline: none;
+  border: 0.0625rem solid #578cf5;
+}
+
+.search:hover {
+  background-color: #272727;
+  transition: all 0.7s;
+}
+
+.location {
+  width: 24px;
+  height: 24px;
+  margin-right: 8px;
+  margin-bottom: 2px;
+  margin-left: 20px;
+}
+
+.services {
+  display: grid;
+  grid-template-columns: repeat(5, 1fr);
+  gap: 20px;
+  padding: 20px;
   text-align: center;
+}
+
+.services figure {
+  margin: 0;
+}
+
+.services img {
+  width: 50%;
+  border-radius: 8px;
+}
+
+.services figcaption {
+  margin-top: 8px;
+  font-size: 16px;
+  color: white;
+}
+
+.star {
+  color: gold;
+  font-size: 18px;
+  margin: 0 2px;
 }
