@@ -22,8 +22,18 @@
 
 ---
 
-### Backend
+### Backend (Edited by Anmoldeep Singh on 18/04/2025 at 2.36pm)
 
-- ...
+- User service 
+- Endpoints
+    - User Signup 
+    - User Login
+    - Session Token
+    - Refresh Token
+    - Change Password
+- Features 
+    - Password Hashing
+    - Contractor or Customer Identification
+- Script to load mock users
 
 ---
