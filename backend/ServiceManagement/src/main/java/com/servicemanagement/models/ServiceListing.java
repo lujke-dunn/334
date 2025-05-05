@@ -39,7 +39,7 @@ public class ServiceListing {
     private BigDecimal price;
 
     @Column(nullable = false)
-    private Integer duration_minutes;
+    private Integer durationMinutes;
 
     @Enumerated(EnumType.STRING)
     @Column(nullable = false)
@@ -61,11 +61,11 @@ public class ServiceListing {
     // location service type ; at home, at facility, an emergency
     private Boolean inHomeService;
     private Boolean outHomeService;
-    private Boolean EmergencyService;
+    private Boolean emergencyService;
 
     @ElementCollection
     @CollectionTable(name = "service_listing_availability", joinColumns = @JoinColumn(name = "service_listing_id"))
-    private Set<String> availabileDays = new HashSet<>(); // contains, monday tuesday etc
+    private Set<String> availableDays = new HashSet<>(); // contains, monday tuesday etc
 
     private String availableHoursStart;
     private String availableHoursEnd;
@@ -96,11 +96,11 @@ public class ServiceListing {
     // methods for extracting availability and adding availability
 
     public boolean isAvailableOn(String dayOfWeek) {
-        return availabileDays.contains(dayOfWeek);
+        return availableDays.contains(dayOfWeek);
     }
 
     public void addAvailabilityDay(String dayOfWeek) {
-        this.availabileDays.add(dayOfWeek.toUpperCase());
+        this.availableDays.add(dayOfWeek.toUpperCase());
     }
 
     // methods to update ratings, and increment completed booking counter
