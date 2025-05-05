@@ -1,11 +1,9 @@
 package com.servicemanagement.repository;
 
-// models imports
 import com.servicemanagement.models.ServiceCategory;
 import com.servicemanagement.models.ServiceListing;
 import com.servicemanagement.models.ServiceStatus;
 
-// spring repository
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.data.jpa.repository.JpaRepository;
@@ -13,7 +11,6 @@ import org.springframework.data.jpa.repository.Query;
 import org.springframework.data.repository.query.Param;
 import org.springframework.stereotype.Repository;
 
-//math
 import java.math.BigDecimal;
 import java.util.List;
 import java.util.Optional;
@@ -23,7 +20,7 @@ public interface ServiceListingRepository extends JpaRepository<ServiceListing, 
     // find all active service listings by a contractor
     List<ServiceListing> findByContractorIDAndStatus(Long contractorId, ServiceStatus status);
 
-    // find all service listing by service category and status.
+    // find all service listings by service category and status
     List<ServiceListing> findByCategoryAndStatus(ServiceCategory category, ServiceStatus status);
 
     // find active services by location with pagination
@@ -85,12 +82,12 @@ public interface ServiceListingRepository extends JpaRepository<ServiceListing, 
     // Count services by contractor
     long countByContractorID(Long contractorId);
 
-    // find services by id and ensure is active
+    // find service by id and ensure it's active
     Optional<ServiceListing> findByIdAndStatus(Long id, ServiceStatus status);
 
     // check if contractor has active services
     boolean existsByContractorIDAndStatus(Long contractorId, ServiceStatus status);
 
-    // find services needing approval (if they have a PENDING status)
+    // find services needing approval (with PENDING status)
     List<ServiceListing> findByStatus(ServiceStatus status);
 }
