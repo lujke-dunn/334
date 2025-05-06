@@ -62,6 +62,18 @@ public class ServiceController {
         return new ResponseEntity<>(convertToDto(savedService), HttpStatus.CREATED);
     }
 
+    @PutMapping("/{id}/approve")
+    public ResponseEntity<ServiceListingResponse> approveService(@PathVariable Long id) {
+        try {
+            ServiceListing service = serviceListingService.approveService(id);
+            return new ResponseEntity<>(convertToDto(service), HttpStatus.OK);
+        } catch (IllegalStateException e) {
+            return new ResponseEntity<>(HttpStatus.BAD_REQUEST);
+        } catch (Exception e) {
+            return new ResponseEntity<>(HttpStatus.NOT_FOUND);
+        }
+    }
+
     @PutMapping("/{id}")
     public ResponseEntity<ServiceListingResponse> updateService(
             @PathVariable Long id,

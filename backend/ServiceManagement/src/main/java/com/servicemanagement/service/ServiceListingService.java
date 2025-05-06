@@ -46,7 +46,7 @@ public class ServiceListingService {
         return serviceListingRepository.save(serviceListing);
     }
 
-    // Helper method to initialize new service properties
+
     private void initializeNewService(ServiceListing service) {
         service.setStatus(ServiceStatus.PENDING);
         service.setCompletedBookings(0);
@@ -120,7 +120,6 @@ public class ServiceListingService {
 
     // Find services within geographic radius
     public List<ServiceListing> getServicesNearby(Double latitude, Double longitude, Integer radiusKm) {
-        // Validate parameters
         if (latitude == null || longitude == null) {
             throw new IllegalArgumentException("Latitude and longitude must be provided");
         }
@@ -143,7 +142,7 @@ public class ServiceListingService {
         return serviceListingRepository.existsByContractorIDAndStatus(contractorId, ServiceStatus.ACTIVE);
     }
 
-    // Get services with a specific status - reusable method
+    // Get services with a specific status
     public List<ServiceListing> getServicesByStatus(ServiceStatus status) {
         return serviceListingRepository.findByStatus(status);
     }
@@ -153,7 +152,7 @@ public class ServiceListingService {
         return getServicesByStatus(ServiceStatus.PENDING);
     }
 
-    // Update service status - reusable helper method
+
     @Transactional
     protected ServiceListing updateServiceStatus(Long serviceId, ServiceStatus newStatus) {
         ServiceListing service = getServiceById(serviceId);
