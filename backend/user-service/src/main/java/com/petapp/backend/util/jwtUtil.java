@@ -1,12 +1,11 @@
 package com.petapp.backend.util;
 
-import org.springframework.stereotype.Component;
-
 import io.jsonwebtoken.Claims;
 import io.jsonwebtoken.Jwts;
 import io.jsonwebtoken.SignatureAlgorithm;
 import org.springframework.stereotype.Component;
 
+import java.util.Base64;
 import java.util.Date;
 
 @Component
@@ -14,14 +13,15 @@ public class jwtUtil {
 
     private final String SECRET_KEY = "dogparklmao";
     private final long EXPIRATION = 1000 * 60 * 15; // 15 minutes
+    private final byte[] encodedSecretKey = Base64.getEncoder().encode(SECRET_KEY.getBytes());
 
     public String generateToken(String email) {
         return Jwts.builder()
-            .setSubject(email)
-            .setIssuedAt(new Date())
-            .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION))
-            .signWith(SignatureAlgorithm.HS256, SECRET_KEY)
-            .compact();
+                .setSubject(email)
+                .setIssuedAt(new Date())
+                .setExpiration(new Date(System.currentTimeMillis() + EXPIRATION))
+                .signWith(SignatureAlgorithm.HS256, encodedSecretKey)
+                .compact();
     }
 
     public String extractEmail(String token) {
@@ -39,10 +39,11 @@ public class jwtUtil {
 
     private Claims getClaims(String token) {
         return Jwts.parser()
-            .setSigningKey(SECRET_KEY)
-            .parseClaimsJws(token)
-            .getBody();
+                .setSigningKey(encodedSecretKey)
+                .parseClaimsJws(token)
+                .getBody();
     }
+
     public String refreshToken(String email) {
         return generateToken(email);
     }
