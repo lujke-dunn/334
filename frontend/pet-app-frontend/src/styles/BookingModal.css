@@ -1,0 +1,403 @@
+/* QuickBookModal Styles */
+.quick-book-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background-color: rgba(0, 0, 0, 0.6);
+    backdrop-filter: blur(4px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+    padding: 1rem;
+    animation: fadeIn 0.3s ease-out;
+  }
+  
+  .quick-book-modal {
+    background-color: white;
+    border-radius: 16px;
+    width: 100%;
+    max-width: 500px;
+    box-shadow: 0 20px 25px -5px rgba(0, 0, 0, 0.1), 0 10px 10px -5px rgba(0, 0, 0, 0.04);
+    animation: slideIn 0.3s ease-out;
+    overflow: hidden;
+  }
+  
+  /* Header */
+  .quick-book-header {
+    padding: 1.5rem 2rem;
+    border-bottom: 1px solid #e5e7eb;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    background: linear-gradient(135deg, #ff7a00 0%, #ff9e2a 100%);
+    color: white;
+  }
+  
+  .quick-book-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+  }
+  
+  .close-button {
+    background: rgba(255, 255, 255, 0.2);
+    border: none;
+    border-radius: 8px;
+    padding: 0.5rem;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+  }
+  
+  .close-button:hover {
+    background: rgba(255, 255, 255, 0.3);
+  }
+  
+  .close-button svg {
+    width: 20px;
+    height: 20px;
+  }
+  
+  /* Service Info Card */
+  .service-info-card {
+    padding: 1.5rem 2rem;
+    background: #f8fafc;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .service-card-content {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+  }
+  
+  .contractor-avatar {
+    width: 60px;
+    height: 60px;
+    background: linear-gradient(135deg, #ff7a00 0%, #ff9e2a 100%);
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: white;
+    box-shadow: 0 4px 8px rgba(255, 122, 0, 0.3);
+  }
+  
+  .service-details h3 {
+    font-size: 1.25rem;
+    font-weight: 700;
+    color: #111827;
+    margin: 0 0 0.25rem 0;
+  }
+  
+  .contractor-name {
+    color: #6b7280;
+    font-size: 0.875rem;
+    margin: 0 0 0.75rem 0;
+  }
+  
+  .service-meta {
+    display: flex;
+    gap: 1rem;
+    align-items: center;
+    flex-wrap: wrap;
+  }
+  
+  .service-meta .price {
+    font-size: 1.125rem;
+    font-weight: 700;
+    color: #ff7a00;
+  }
+  
+  .service-meta .duration {
+    color: #6b7280;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  
+  .service-meta .location {
+    color: #6b7280;
+    font-size: 0.875rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  
+  .service-meta .duration::before {
+    content: "⏱";
+  }
+  
+  .service-meta .location::before {
+    content: "📍";
+  }
+  
+  /* Error Banner */
+  .error-banner {
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid #ef4444;
+    color: #dc2626;
+    padding: 1rem 2rem;
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    animation: slideDown 0.3s ease-out;
+  }
+  
+  .error-banner svg {
+    flex-shrink: 0;
+  }
+  
+  /* Booking Form */
+  .booking-form {
+    padding: 2rem;
+  }
+  
+  .form-section {
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-group {
+    margin-bottom: 1.5rem;
+  }
+  
+  .form-group label {
+    display: block;
+    margin-bottom: 0.5rem;
+    font-size: 0.875rem;
+    font-weight: 600;
+    color: #374151;
+  }
+  
+  .date-input,
+  .notes-input {
+    width: 100%;
+    padding: 0.75rem 1rem;
+    border: 2px solid #e5e7eb;
+    border-radius: 12px;
+    color: #111827;
+    font-size: 1rem;
+    transition: all 0.2s ease;
+    background-color: white;
+  }
+  
+  .date-input:focus,
+  .notes-input:focus {
+    outline: none;
+    border-color: #ff7a00;
+    box-shadow: 0 0 0 3px rgba(255, 122, 0, 0.1);
+  }
+  
+  .date-input.error {
+    border-color: #ef4444;
+    box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
+  }
+  
+  .error-text {
+    color: #dc2626;
+    font-size: 0.875rem;
+    margin-top: 0.25rem;
+    display: flex;
+    align-items: center;
+    gap: 0.25rem;
+  }
+  
+  .error-text::before {
+    content: "⚠️";
+  }
+  
+  .notes-input {
+    min-height: 80px;
+    resize: vertical;
+    font-family: inherit;
+  }
+  
+  /* Booking Summary */
+  .booking-summary {
+    background: #f8fafc;
+    border: 1px solid #e5e7eb;
+    border-radius: 12px;
+    padding: 1.25rem;
+    margin-bottom: 1.5rem;
+  }
+  
+  .booking-summary h4 {
+    font-size: 1rem;
+    font-weight: 600;
+    color: #111827;
+    margin: 0 0 1rem 0;
+  }
+  
+  .summary-grid {
+    display: grid;
+    gap: 0.75rem;
+  }
+  
+  .summary-item {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    padding: 0.5rem 0;
+  }
+  
+  .summary-item.total {
+    border-top: 1px solid #e5e7eb;
+    padding-top: 0.75rem;
+    margin-top: 0.25rem;
+    font-weight: 600;
+  }
+  
+  .summary-item .label {
+    color: #6b7280;
+    font-size: 0.875rem;
+  }
+  
+  .summary-item .value {
+    color: #111827;
+    font-weight: 500;
+    text-align: right;
+  }
+  
+  .summary-item .value.price {
+    color: #ff7a00;
+    font-size: 1.125rem;
+    font-weight: 700;
+  }
+  
+  /* Action Buttons */
+  .action-buttons {
+    display: flex;
+    gap: 1rem;
+    margin-top: 2rem;
+  }
+  
+  .cancel-button,
+  .confirm-button {
+    flex: 1;
+    padding: 0.75rem 1.5rem;
+    border-radius: 12px;
+    font-size: 1rem;
+    font-weight: 600;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    border: 2px solid transparent;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+  }
+  
+  .cancel-button {
+    background: white;
+    border-color: #e5e7eb;
+    color: #6b7280;
+  }
+  
+  .cancel-button:hover {
+    background: #f9fafb;
+    border-color: #d1d5db;
+    color: #374151;
+  }
+  
+  .confirm-button {
+    background: linear-gradient(135deg, #ff7a00 0%, #ff9e2a 100%);
+    color: white;
+    border-color: #ff7a00;
+  }
+  
+  .confirm-button:hover:not(:disabled) {
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 122, 0, 0.4);
+  }
+  
+  .confirm-button:disabled {
+    background: #d1d5db;
+    border-color: #d1d5db;
+    color: #9ca3af;
+    cursor: not-allowed;
+    transform: none;
+    box-shadow: none;
+  }
+  
+  /* Loading Spinner */
+  .loading-spinner {
+    width: 16px;
+    height: 16px;
+    border: 2px solid rgba(255, 255, 255, 0.3);
+    border-radius: 50%;
+    border-top-color: white;
+    animation: spin 1s linear infinite;
+  }
+  
+  /* Animations */
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+    }
+    to {
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideIn {
+    from {
+      opacity: 0;
+      transform: scale(0.9) translateY(-20px);
+    }
+    to {
+      opacity: 1;
+      transform: scale(1) translateY(0);
+    }
+  }
+  
+  @keyframes slideDown {
+    from {
+      opacity: 0;
+      transform: translateY(-10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  @keyframes spin {
+    to {
+      transform: rotate(360deg);
+    }
+  }
+  
+  /* Responsive Design */
+  @media (max-width: 640px) {
+    .quick-book-overlay {
+      padding: 0.5rem;
+    }
+    
+    .quick-book-modal {
+      max-width: 100%;
+      border-radius: 12px;
+    }
+    
+    .quick-book-header,
+    .service-info-card,
+    .booking-form {
+      padding: 1rem 1.5rem;
+    }
+    
+    .action-buttons {
+      flex-direction: column;
+    }
+    
+    .service-card-content {
+      flex-direction: column;
+      text-align: center;
+    }
+  }

@@ -11,6 +11,7 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 
 import java.math.BigDecimal;
+import java.util.Arrays;
 import java.util.List;
 import java.util.Optional;
 
@@ -63,10 +64,12 @@ public class ServiceListingService {
         return serviceListingRepository.save(serviceListing);
     }
 
-    // Get all services for a contractor
+
     public List<ServiceListing> getContractorServices(Long contractorId) {
-        return serviceListingRepository.findByContractorIDAndStatus(contractorId, ServiceStatus.ACTIVE);
+        List<ServiceStatus> allowedStatuses = Arrays.asList(ServiceStatus.PENDING, ServiceStatus.ACTIVE);
+        return serviceListingRepository.findByContractorIDAndStatusIn(contractorId, allowedStatuses);
     }
+
 
     // Search for services by term
     public Page<ServiceListing> searchServices(String searchTerm, Pageable pageable) {

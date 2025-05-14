@@ -1,0 +1,409 @@
+import { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { getUserRole, getUserEmail, logout, isAuthenticated, getAccessToken } from '../../utils/api';
+import DashboardSidebar from './DashboardSidebar';
+import DashboardHeader from './DashboardHeader';
+import CustomerDashboard from './CustomerDashboard';
+import ContractorDashboard from './ContractorDashboard/ContractorDashboard';
+import LocationModal from './Modals/LocationModal';
+import CreateServiceModal from './Modals/CreateServiceModal';
+import '../../styles/Dashboard.css';
+
+const Dashboard = () => {
+  const [userRole, setUserRole] = useState('');
+  const [userEmail, setUserEmail] = useState('');
+  const [userProfile, setUserProfile] = useState({
+    id: null,
+    name: '',
+    location: '',
+    phone: '',
+    profileCompleted: false,
+    hasServices: false
+  });
+  const [services, setServices] = useState([]);
+  const [contractors, setContractors] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [activeTab, setActiveTab] = useState('overview');
+  const [showLocationModal, setShowLocationModal] = useState(false);
+  const [showCreateServiceModal, setShowCreateServiceModal] = useState(false);
+  
+  // Reference to store tab-specific data
+  const tabDataRef = useRef({
+    tabId: null,
+    contractorId: null,
+    initialized: false
+  });
+  
+  const navigate = useNavigate();
+  
+  useEffect(() => {
+    // Check authentication
+    if (!isAuthenticated()) {
+      navigate('/login');
+      return;
+    }
+    
+    // Generate unique tab ID for this specific tab instance
+    if (!tabDataRef.current.tabId) {
+      tabDataRef.current.tabId = generateTabId();
+    }
+    
+    // Get user details
+    const role = getUserRole();
+    const email = getUserEmail();
+    setUserRole(role);
+    setUserEmail(email);
+    
+    // Initialize user profile for this tab
+    initializeTabProfile(email, role);
+    
+    // Load data based on role
+    if (role === 'CUSTOMER') {
+      loadCustomerDashboard();
+    } else if (role === 'CONTRACTOR') {
+      loadContractorDashboard();
+    }
+    
+    setLoading(false);
+  }, [navigate]);
+  
+  // Add this function to generate a unique tab ID
+  const generateTabId = () => {
+    return `tab-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`;
+  };
+  
+  const initializeTabProfile = async (email, role) => {
+    try {
+      const token = getAccessToken();
+      if (!token) {
+        throw new Error('No access token available');
+      }
+      
+      // Get the user ID from UserService with proper auth
+      const userId = await getUserFromUserService(email, token);
+      
+      if (!userId) {
+        throw new Error(`Could not find user with email: ${email}`);
+      }
+      
+      // Contractor ID = User ID (simple and clean)
+      const contractorId = userId;
+      tabDataRef.current.contractorId = contractorId;
+      
+      const profile = {
+        id: contractorId,
+        name: email.split('@')[0],
+        location: '',
+        phone: '',
+        profileCompleted: false,
+        hasServices: false
+      };
+      
+      setUserProfile(profile);
+      tabDataRef.current.initialized = true;
+      
+      console.log('✅ Profile initialized:', { email, role, contractorId });
+      
+      if (role === 'CONTRACTOR' && !profile.location) {
+        setShowLocationModal(true);
+      }
+    } catch (error) {
+      console.error('❌ Error initializing profile:', error);
+      if (error.message.includes('authentication') || error.message.includes('token')) {
+        // If it's an auth error, redirect to login
+        logout();
+        navigate('/login');
+      } else {
+        alert('Error loading profile. Please try again.');
+      }
+    }
+  };
+  
+  // Updated function to fetch user with proper authentication
+  const getUserFromUserService = async (email, token) => {
+    try {
+      console.log('🔍 Fetching user:', email);
+      const response = await fetch(`http://localhost:8080/api/users/by-email?email=${encodeURIComponent(email)}`, {
+        headers: {
+          'Content-Type': 'application/json',
+          'Authorization': `Bearer ${token}`
+        }
+      });
+      
+      if (response.status === 401 || response.status === 403) {
+        throw new Error('Authentication required');
+      }
+      
+      if (!response.ok) {
+        console.error('❌ UserService error:', response.status, response.statusText);
+        throw new Error(`UserService error: ${response.status}`);
+      }
+      
+      const userData = await response.json();
+      console.log('✅ Got user data:', userData);
+      return userData.id;
+    } catch (error) {
+      console.error('❌ Error fetching user:', error);
+      throw error;
+    }
+  };
+  
+  // Keep getContractorId simple
+  const getContractorId = () => {
+    const id = userProfile.id || tabDataRef.current.contractorId;
+    console.log('getContractorId returning:', id);
+    return id;
+  };
+
+  const loadCustomerDashboard = async () => {
+    try {
+      const servicesResponse = await fetch('http://localhost:8082/api/services');
+      if (servicesResponse.ok) {
+        const servicesData = await servicesResponse.json();
+        setServices(servicesData.slice(0, 6));
+      }
+      
+      const contractorsResponse = await fetch('http://localhost:8082/api/services/featured');
+      if (contractorsResponse.ok) {
+        const contractorsData = await contractorsResponse.json();
+        setContractors(contractorsData.slice(0, 6));
+      }
+    } catch (error) {
+      console.error('Error loading customer dashboard:', error);
+    }
+  };
+  
+  const loadContractorDashboard = async () => {
+    try {
+      const contractorId = getContractorId();
+      if (!contractorId) {
+        console.error('No contractor ID available');
+        return;
+      }
+      
+      // Load contractor's services
+      const response = await fetch(`http://localhost:8082/api/services/contractor/${contractorId}`);
+      if (response.ok) {
+        const data = await response.json();
+        setServices(data);
+        
+        // Update profile with service count
+        const updatedProfile = { ...userProfile, hasServices: data.length > 0 };
+        setUserProfile(updatedProfile);
+      }
+    } catch (error) {
+      console.error('Error loading contractor dashboard:', error);
+    }
+  };
+  
+  const handleLocationSubmit = async (locationData) => {
+    // Save location
+    const fullLocation = `${locationData.city}, ${locationData.state}`;
+    const updatedProfile = { 
+      ...userProfile, 
+      location: fullLocation,
+      profileCompleted: true
+    };
+    
+    setUserProfile(updatedProfile);
+    setShowLocationModal(false);
+  };
+  
+  const handleCreateService = async (serviceData) => {
+    try {
+      const contractorId = getContractorId();
+      console.log('🏭 Creating service - contractorId:', contractorId); // Debug log
+      
+      if (!contractorId) {
+        console.error('No contractor ID available');
+        alert('Cannot create service: No contractor ID available');
+        return;
+      }
+      
+      // Get authentication headers
+      const token = getAccessToken();
+      const headers = {
+        'Content-Type': 'application/json',
+        'X-Contractor-ID': contractorId.toString(),
+        'X-Contractor-Name': userProfile.name,
+        'X-Contractor-Email': userEmail
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      console.log('📤 Request headers:', headers); // Debug log
+      console.log('📤 Request body:', serviceData); // Debug log
+      
+      const response = await fetch('http://localhost:8082/api/services', {
+        method: 'POST',
+        headers,
+        body: JSON.stringify(serviceData)
+      });
+      
+      console.log('📥 Create response status:', response.status); // Debug log
+      console.log('📥 Create response ok:', response.ok); // Debug log
+      
+      if (response.ok) {
+        const newService = await response.json();
+        console.log('✅ Service created successfully:', newService); // Debug log
+        console.log('🔄 Current services before update:', services); // Debug log
+        
+        setServices(prev => {
+          const updated = [...prev, newService];
+          console.log('🔄 Updated services list:', updated); // Debug log
+          return updated;
+        });
+        
+        // Update profile
+        const updatedProfile = { ...userProfile, hasServices: true };
+        setUserProfile(updatedProfile);
+        
+        setShowCreateServiceModal(false);
+        
+        // Refresh with delay
+        setTimeout(() => {
+          console.log('🔄 Refreshing dashboard...'); // Debug log
+          loadContractorDashboard();
+        }, 1000);
+      } else {
+        const error = await response.text();
+        console.error('❌ Failed to create service:', error);
+        alert('Failed to create service. Please try again.');
+      }
+    } catch (error) {
+      console.error('❌ Error creating service:', error);
+      alert('Error creating service. Please check your connection and try again.');
+    }
+  };
+  
+  const handleDeleteService = async (serviceId) => {
+    if (!window.confirm('Are you sure you want to delete this service?')) return;
+    
+    try {
+      const contractorId = getContractorId();
+      if (!contractorId) {
+        console.error('No contractor ID available');
+        return;
+      }
+      
+      const token = getAccessToken();
+      const headers = {
+        'X-Contractor-ID': contractorId.toString()
+      };
+      
+      if (token) {
+        headers['Authorization'] = `Bearer ${token}`;
+      }
+      
+      const response = await fetch(`http://localhost:8082/api/services/${serviceId}`, {
+        method: 'DELETE',
+        headers
+      });
+      
+      if (response.ok) {
+        setServices(prev => prev.filter(service => service.id !== serviceId));
+        loadContractorDashboard();
+      } else {
+        console.error('Failed to delete service');
+        alert('Failed to delete service. Please try again.');
+      }
+    } catch (error) {
+      console.error('Error deleting service:', error);
+      alert('Error deleting service. Please check your connection and try again.');
+    }
+  };
+  
+  const handleLogout = () => {
+    // Clear tab-specific data
+    tabDataRef.current = {
+      tabId: null,
+      contractorId: null,
+      initialized: false
+    };
+    
+    logout();
+  };
+  
+  const handleSearch = async (searchTerm) => {
+    if (!searchTerm.trim()) return;
+    
+    try {
+      const response = await fetch(`http://localhost:8082/api/services/search?searchTerm=${encodeURIComponent(searchTerm)}`);
+      if (response.ok) {
+        const data = await response.json();
+        setServices(data);
+      }
+    } catch (error) {
+      console.error('Error searching services:', error);
+    }
+  };
+  
+  if (loading) {
+    return (
+      <div className="loading-screen">
+        <div className="loading-spinner"></div>
+        <p>Loading dashboard...</p>
+      </div>
+    );
+  }
+  
+  return (
+    <div className="dashboard">
+      <DashboardSidebar
+        userProfile={userProfile}
+        userRole={userRole}
+        userEmail={userEmail}
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        onLogout={handleLogout}
+        navigate={navigate}
+        tabId={tabDataRef.current.tabId}
+      />
+      
+      <main className="dashboard-main">
+        <DashboardHeader
+          userRole={userRole}
+          onSearch={handleSearch}
+        />
+        
+        <div className="dashboard-content">
+          {userRole === 'CUSTOMER' ? (
+            <CustomerDashboard 
+              services={services} 
+              contractors={contractors} 
+            />
+          ) : (
+            <ContractorDashboard 
+              services={services} 
+              activeTab={activeTab}
+              userProfile={userProfile}
+              onLocationUpdate={() => setShowLocationModal(true)}
+              onCreateService={() => setShowCreateServiceModal(true)}
+              onDeleteService={handleDeleteService}
+            />
+          )}
+        </div>
+      </main>
+      
+      {/* Modals */}
+      {showLocationModal && (
+        <LocationModal
+          onSubmit={handleLocationSubmit}
+          onClose={() => setShowLocationModal(false)}
+        />
+      )}
+      
+      {showCreateServiceModal && ( 
+        <CreateServiceModal
+          userProfile={userProfile}
+          onSubmit={handleCreateService}
+          onClose={() => setShowCreateServiceModal(false)}
+        />
+      )}
+    </div>
+  );
+};
+
+export default Dashboard;

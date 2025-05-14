@@ -23,6 +23,8 @@ public interface ServiceListingRepository extends JpaRepository<ServiceListing, 
     // find all service listings by service category and status
     List<ServiceListing> findByCategoryAndStatus(ServiceCategory category, ServiceStatus status);
 
+    List<ServiceListing> findByContractorIDAndStatusIn(Long contractorId, List<ServiceStatus> statuses);
+
     // find active services by location with pagination
     Page<ServiceListing> findByLocationContainingIgnoreCaseAndStatus(
             String location, ServiceStatus status, Pageable pageable);

@@ -138,6 +138,11 @@ export function getUserEmail() {
   return localStorage.getItem('userEmail');
 }
 
+// Get access token - ADD THIS FUNCTION
+export function getAccessToken() {
+  return localStorage.getItem('accessToken');
+}
+
 // Logout function
 export function logout() {
   localStorage.removeItem('accessToken');

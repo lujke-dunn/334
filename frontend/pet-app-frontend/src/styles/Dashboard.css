@@ -1023,3 +1023,656 @@ html, body {
     padding: 0.75rem;
   }
 }
+
+/* Updated Service Cards CSS - Add these styles to your Dashboard.css or CustomerDashboard.css */
+
+/* Hero Section */
+.hero {
+  text-align: center;
+  padding: 3rem 1rem;
+  background: linear-gradient(135deg, #ffffff 0%, #f8fafc 100%);
+  border-radius: 16px;
+  margin-bottom: 2rem;
+  border: 1px solid #e5e7eb;
+}
+
+.hero h1 {
+  font-size: 2.5rem;
+  font-weight: 800;
+  color: #111827;
+  margin-bottom: 0.75rem;
+  background: linear-gradient(135deg, #ff7a00 0%, #ff9e2a 100%);
+  background-clip: text;
+  -webkit-background-clip: text;
+  -webkit-text-fill-color: transparent;
+}
+
+.hero p {
+  font-size: 1.125rem;
+  color: #6b7280;
+  font-weight: 500;
+}
+
+/* Services Section */
+.services-section {
+  margin-bottom: 2rem;
+}
+
+.services-section h3 {
+  font-size: 1.75rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 1.5rem;
+  text-align: center;
+}
+
+/* Updated Services Grid */
+.services-grid {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(320px, 1fr));
+  gap: 1.5rem;
+  padding: 1rem 0;
+}
+
+/* Enhanced Service Cards */
+.service-card {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.1);
+  transition: all 0.3s ease;
+  border: 1px solid #e5e7eb;
+  position: relative;
+  overflow: hidden;
+}
+
+.service-card:hover {
+  transform: translateY(-4px);
+  box-shadow: 0 8px 25px rgba(255, 122, 0, 0.15);
+  border-color: rgba(255, 122, 0, 0.3);
+}
+
+.service-card::before {
+  content: '';
+  position: absolute;
+  top: 0;
+  left: 0;
+  right: 0;
+  height: 4px;
+  background: linear-gradient(90deg, #ff7a00 0%, #ff9e2a 100%);
+}
+
+/* Service Icon/Avatar */
+.service-icon {
+  width: 64px;
+  height: 64px;
+  background: linear-gradient(135deg, #ff7a00 0%, #ff9e2a 100%);
+  border-radius: 16px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  margin-bottom: 1rem;
+  box-shadow: 0 4px 12px rgba(255, 122, 0, 0.3);
+}
+
+/* Add icons for different service types */
+.service-icon::before {
+  content: '🐕';
+  font-size: 1.5rem;
+}
+
+.service-card[data-category="pet_sitting"] .service-icon::before {
+  content: '🏠';
+}
+
+.service-card[data-category="dog_walking"] .service-icon::before {
+  content: '🐕';
+}
+
+.service-card[data-category="pet_grooming"] .service-icon::before {
+  content: '✂️';
+}
+
+.service-card[data-category="pet_training"] .service-icon::before {
+  content: '🎾';
+}
+
+/* Service Info */
+.service-info {
+  position: relative;
+}
+
+.service-info h4 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.5rem;
+  line-height: 1.3;
+}
+
+.service-info p {
+  color: #6b7280;
+  font-size: 0.875rem;
+  margin-bottom: 1rem;
+  font-weight: 500;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.service-info p::before {
+  content: '👤';
+  font-size: 0.75rem;
+}
+
+/* Service Meta */
+.service-meta {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.5rem;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+}
+
+.price {
+  font-size: 1.5rem;
+  font-weight: 800;
+  color: #ff7a00;
+  display: flex;
+  align-items: baseline;
+}
+
+.price::before {
+  content: '$';
+  font-size: 1rem;
+}
+
+.duration {
+  color: #6b7280;
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  background: white;
+  padding: 0.5rem 0.75rem;
+  border-radius: 8px;
+  border: 1px solid #e5e7eb;
+}
+
+.duration::before {
+  content: '⏱️';
+  font-size: 0.75rem;
+}
+
+/* Book Button */
+.book-btn {
+  width: 100%;
+  background: linear-gradient(135deg, #ff7a00 0%, #ff9e2a 100%);
+  color: white;
+  border: none;
+  border-radius: 12px;
+  padding: 1rem 1.5rem;
+  font-size: 1rem;
+  font-weight: 700;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  gap: 0.5rem;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.book-btn:hover {
+  transform: translateY(-2px);
+  box-shadow: 0 8px 20px rgba(255, 122, 0, 0.4);
+  background: linear-gradient(135deg, #e56e00 0%, #ff7a00 100%);
+}
+
+.book-btn:active {
+  transform: translateY(0);
+}
+
+.book-btn::after {
+  content: '→';
+  font-size: 1.125rem;
+  transition: transform 0.3s ease;
+}
+
+.book-btn:hover::after {
+  transform: translateX(4px);
+}
+
+/* Badge for featured services */
+.featured-badge {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  background: linear-gradient(135deg, #f59e0b 0%, #f97316 100%);
+  color: white;
+  font-size: 0.75rem;
+  font-weight: 700;
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+/* Rating display */
+.service-rating {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  margin-top: 0.5rem;
+}
+
+.stars {
+  display: flex;
+  gap: 0.125rem;
+}
+
+.star {
+  color: #fbbf24;
+  font-size: 0.875rem;
+}
+
+.star.empty {
+  color: #d1d5db;
+}
+
+.rating-count {
+  color: #6b7280;
+  font-size: 0.75rem;
+  font-weight: 500;
+}
+
+/* Recent Bookings Section */
+.recent-bookings {
+  background: white;
+  border-radius: 16px;
+  padding: 1.5rem;
+  margin-bottom: 2rem;
+  border: 1px solid #e5e7eb;
+  box-shadow: 0 2px 8px rgba(0, 0, 0, 0.05);
+}
+
+.recent-bookings h3 {
+  font-size: 1.25rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 1rem;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.recent-bookings h3::before {
+  content: '📅';
+}
+
+.bookings-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.booking-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 0.75rem;
+  background: #f8fafc;
+  border-radius: 12px;
+  border: 1px solid #e5e7eb;
+  transition: all 0.2s ease;
+}
+
+.booking-item:hover {
+  transform: translateX(4px);
+  border-color: #ff7a00;
+}
+
+.booking-info {
+  display: flex;
+  flex-direction: column;
+  gap: 0.25rem;
+}
+
+.service-name {
+  font-weight: 600;
+  color: #111827;
+  font-size: 0.875rem;
+}
+
+.booking-date {
+  color: #6b7280;
+  font-size: 0.75rem;
+}
+
+.status {
+  padding: 0.25rem 0.75rem;
+  border-radius: 20px;
+  font-size: 0.75rem;
+  font-weight: 600;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.status.pending {
+  background: rgba(251, 191, 36, 0.1);
+  color: #d97706;
+}
+
+.status.confirmed {
+  background: rgba(34, 197, 94, 0.1);
+  color: #059669;
+}
+
+.status.completed {
+  background: rgba(59, 130, 246, 0.1);
+  color: #2563eb;
+}
+
+/* Responsive Design */
+@media (max-width: 768px) {
+  .services-grid {
+    grid-template-columns: repeat(auto-fill, minmax(280px, 1fr));
+    gap: 1rem;
+  }
+  
+  .hero h1 {
+    font-size: 2rem;
+  }
+  
+  .hero p {
+    font-size: 1rem;
+  }
+  
+  .service-meta {
+    flex-direction: column;
+    gap: 0.75rem;
+    align-items: stretch;
+  }
+  
+  .price {
+    text-align: center;
+  }
+}
+
+@media (max-width: 480px) {
+  .services-grid {
+    grid-template-columns: 1fr;
+  }
+  
+  .service-card {
+    padding: 1rem;
+  }
+  
+  .hero {
+    padding: 2rem 1rem;
+  }
+}
+
+
+/* Enhanced Search Section */
+.search-container {
+  position: relative;
+  width: 100%;
+  max-width: 600px;
+  margin: 0 auto;
+}
+
+.search-wrapper {
+  position: relative;
+  background: white;
+  border-radius: 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  overflow: hidden;
+  transition: all 0.3s ease;
+}
+
+.search-wrapper:hover,
+.search-wrapper:focus-within {
+  box-shadow: 0 12px 40px rgba(255, 122, 0, 0.15);
+  border-color: rgba(255, 122, 0, 0.3);
+}
+
+.search-inputs {
+  display: flex;
+  align-items: center;
+  padding: 0;
+}
+
+/* Service Search Input */
+.service-search {
+  flex: 2;
+  padding: 1rem 1.5rem;
+  border: none;
+  background: none;
+  font-size: 1rem;
+  color: #111827;
+  outline: none;
+  border-right: 1px solid #e5e7eb;
+}
+
+.service-search::placeholder {
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+/* Location Search Input */
+.location-search {
+  flex: 1;
+  padding: 1rem 1.5rem;
+  border: none;
+  background: none;
+  font-size: 1rem;
+  color: #111827;
+  outline: none;
+}
+
+.location-search::placeholder {
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+/* Search Button */
+.uber-search-btn {
+  background: linear-gradient(135deg, #ff7a00 0%, #ff9e2a 100%);
+  border: none;
+  color: white;
+  padding: 1rem 1.5rem;
+  cursor: pointer;
+  transition: all 0.3s ease;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 60px;
+}
+
+.uber-search-btn:hover {
+  background: linear-gradient(135deg, #e56e00 0%, #ff7a00 100%);
+  transform: scale(1.05);
+}
+
+.uber-search-btn svg {
+  width: 20px;
+  height: 20px;
+}
+
+/* Filter Dropdown */
+.filter-dropdown {
+  position: absolute;
+  top: 100%;
+  left: 0;
+  right: 0;
+  background: white;
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  border-top: none;
+  max-height: 300px;
+  overflow-y: auto;
+  z-index: 1000;
+  animation: slideDown 0.3s ease-out;
+}
+
+.filter-option {
+  padding: 0.75rem 1.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.75rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.filter-option:hover {
+  background: #f8fafc;
+  transform: translateX(4px);
+}
+
+.filter-option:last-child {
+  border-bottom: none;
+}
+
+.filter-option svg {
+  width: 16px;
+  height: 16px;
+  color: #ff7a00;
+}
+
+/* Location Suggestions */
+.location-suggestions {
+  position: absolute;
+  top: 100%;
+  right: 0;
+  width: 100%;
+  max-width: 300px;
+  background: white;
+  border-radius: 0 0 16px 16px;
+  box-shadow: 0 8px 32px rgba(0, 0, 0, 0.1);
+  border: 1px solid #e5e7eb;
+  border-top: none;
+  max-height: 200px;
+  overflow-y: auto;
+  z-index: 1000;
+  animation: slideDown 0.3s ease-out;
+}
+
+.location-suggestion {
+  padding: 0.75rem 1rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  border-bottom: 1px solid #f3f4f6;
+}
+
+.location-suggestion:hover {
+  background: #f8fafc;
+}
+
+.location-suggestion:last-child {
+  border-bottom: none;
+}
+
+.location-suggestion::before {
+  content: '📍';
+  font-size: 0.875rem;
+}
+
+/* Active Filter Tags */
+.active-filters {
+  display: flex;
+  gap: 0.5rem;
+  margin-top: 0.75rem;
+  flex-wrap: wrap;
+}
+
+.filter-tag {
+  background: rgba(255, 122, 0, 0.1);
+  color: #ff7a00;
+  padding: 0.5rem 1rem;
+  border-radius: 20px;
+  font-size: 0.875rem;
+  font-weight: 600;
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  cursor: pointer;
+  transition: all 0.2s ease;
+}
+
+.filter-tag:hover {
+  background: rgba(255, 122, 0, 0.2);
+}
+
+.filter-tag .remove-tag {
+  font-size: 0.75rem;
+  padding: 0.125rem;
+  border-radius: 50%;
+  background: rgba(255, 122, 0, 0.3);
+  color: white;
+  line-height: 1;
+  cursor: pointer;
+}
+
+/* Search Results Info */
+.search-results-info {
+  text-align: center;
+  padding: 1rem;
+  background: white;
+  border-radius: 12px;
+  margin-bottom: 1rem;
+  border: 1px solid #e5e7eb;
+}
+
+.search-results-info h4 {
+  font-size: 1.125rem;
+  font-weight: 700;
+  color: #111827;
+  margin-bottom: 0.5rem;
+}
+
+.search-results-info p {
+  color: #6b7280;
+  font-size: 0.875rem;
+}
+
+/* Mobile Responsive */
+@media (max-width: 768px) {
+  .search-inputs {
+    flex-direction: column;
+  }
+  
+  .service-search,
+  .location-search {
+    border-right: none;
+    border-bottom: 1px solid #e5e7eb;
+  }
+  
+  .service-search {
+    padding: 1rem 1.5rem 0.75rem 1.5rem;
+  }
+  
+  .location-search {
+    padding: 0.75rem 1.5rem;
+  }
+  
+  .uber-search-btn {
+    padding: 1rem;
+    min-height: 50px;
+  }
+  
+  .location-suggestions {
+    width: 100%;
+    max-width: none;
+  }
+}

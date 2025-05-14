@@ -33,13 +33,18 @@ public class securityConfig {
                 .csrf(csrf -> csrf.disable())
                 .authorizeHttpRequests(auth -> auth
                         // Public routes
-                        .requestMatchers("/api/signup", "/api/login", "/api/refresh", "/h2-console/**").permitAll()
-                        .requestMatchers("/", "/**/*.html", "/**/*.css", "/**/*.js", "/**/*.webp", "/favicon.ico").permitAll()
+                        .requestMatchers("/api/signup", "/api/login", "/api/refresh").permitAll()
+                        .requestMatchers("/h2-console/**").permitAll()
+                        // Static resources - Fixed the problematic patterns
+                        .requestMatchers("/", "/css/**", "/js/**", "/images/**", "/*.css", "/*.js", "/*.png", "/*.jpg", "/*.ico", "/favicon.ico").permitAll()
                         // All other routes require authentication
                         .anyRequest().authenticated()
                 )
                 .sessionManagement(sess -> sess.sessionCreationPolicy(SessionCreationPolicy.STATELESS)) // No sessions stored on server
-                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class); // Add JWT filter
+                .addFilterBefore(jwtFilter, UsernamePasswordAuthenticationFilter.class) // Add JWT filter
+                .headers(headers -> headers
+                        .frameOptions().disable() // Allow H2 console in frames
+                );
 
         return http.build();
     }
