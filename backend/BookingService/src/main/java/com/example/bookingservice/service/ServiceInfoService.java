@@ -27,7 +27,6 @@ public class ServiceInfoService {
 
     public ServiceInfo getServiceById(Long serviceId) {
         try {
-            // Make an actual API call to service management microservice
             ResponseEntity<ServiceInfo> response = restTemplate.getForEntity(
                     serviceManagementUrl + "/api/services/" + serviceId,
                     ServiceInfo.class
@@ -39,11 +38,8 @@ public class ServiceInfoService {
 
             return response.getBody();
         } catch (Exception e) {
-            // Log the error
             System.err.println("Error fetching service with ID " + serviceId + ": " + e.getMessage());
-
-            // Fall back to mock data during development if needed
-            return createMockService(serviceId);
+            throw new EntityNotFoundException("Service not found with id: " + serviceId);
         }
     }
 
@@ -78,18 +74,5 @@ public class ServiceInfoService {
         }
     }
 
-    // Fallback mock service for development/testing
-    private ServiceInfo createMockService(Long serviceId) {
-        return ServiceInfo.builder()
-                .id(serviceId)
-                .name("Mock Service " + serviceId)
-                .description("Mock service description")
-                .category(ServiceCategory.DOG_WALKING)
-                .price(new BigDecimal("25.00"))
-                .durationMinutes(60)
-                .contractorId(1L)
-                .contractorName("Mock Contractor")
-                .contractorEmail("contractor@example.com")
-                .build();
-    }
+
 }

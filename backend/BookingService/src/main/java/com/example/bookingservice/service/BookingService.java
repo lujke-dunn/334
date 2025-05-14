@@ -72,7 +72,7 @@ public class BookingService {
         ServiceInfo serviceInfo = serviceInfoService.getServiceById(request.getServiceId());
 
         // Verify service belongs to this contractor
-        if (!serviceInfo.getContractorId().equals(request.getContractorId())) {
+        if (!serviceInfo.getContractorID().equals(request.getContractorId())) {
             throw new BookingException("The selected service does not belong to the selected contractor");
         }
 

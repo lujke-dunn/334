@@ -2,7 +2,9 @@ package com.example.bookingservice.controller;
 
 import com.example.bookingservice.dto.BookingRequest;
 import com.example.bookingservice.dto.BookingResponse;
+import com.example.bookingservice.exception.BookingException;
 import com.example.bookingservice.service.BookingService;
+import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
 import org.springframework.data.domain.Page;
@@ -13,6 +15,7 @@ import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
 
+import java.nio.file.AccessDeniedException;
 import java.security.Principal;
 import java.util.List;
 import java.util.Map;
@@ -28,8 +31,40 @@ public class BookingController {
     public ResponseEntity<BookingResponse> createBooking(
             @Valid @RequestBody BookingRequest request,
             Principal principal) {
-        BookingResponse booking = bookingService.createBooking(request, principal.getName());
-        return new ResponseEntity<>(booking, HttpStatus.CREATED);
+        try {
+            System.out.println("=== BOOKING REQUEST DEBUG ===");
+            System.out.println("ServiceId: " + request.getServiceId());
+            System.out.println("ContractorId: " + request.getContractorId());
+            System.out.println("StartTime: " + request.getStartTime());
+            System.out.println("EndTime: " + request.getEndTime());
+            System.out.println("Price: " + request.getPrice());
+            System.out.println("Location: " + request.getLocation());
+            System.out.println("Notes: " + request.getNotes());
+            System.out.println("Principal: " + principal.getName());
+            System.out.println("=============================");
+
+            BookingResponse booking = bookingService.createBooking(request, principal.getName());
+            return new ResponseEntity<>(booking, HttpStatus.CREATED);
+        } catch (EntityNotFoundException e) {
+            System.err.println("=== ENTITY NOT FOUND ===");
+            System.err.println("Error: " + e.getMessage());
+            e.printStackTrace();
+            System.err.println("=======================");
+            throw e;
+        } catch (BookingException e) {
+            System.err.println("=== BOOKING EXCEPTION ===");
+            System.err.println("Error: " + e.getMessage());
+            e.printStackTrace();
+            System.err.println("========================");
+            throw e;
+        } catch (Exception e) {
+            System.err.println("=== UNEXPECTED ERROR ===");
+            System.err.println("Error type: " + e.getClass().getSimpleName());
+            System.err.println("Error message: " + e.getMessage());
+            e.printStackTrace();
+            System.err.println("========================");
+            throw e;
+        }
     }
 
     @GetMapping("/{id}")

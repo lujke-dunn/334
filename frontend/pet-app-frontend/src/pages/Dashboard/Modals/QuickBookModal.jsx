@@ -20,12 +20,30 @@ const QuickBookModal = ({ service, onSubmit, onClose, userEmail }) => {
   }, [service]);
 
   // Auto-calculate end time based on service duration
-  const getEndTime = (startTime) => {
-    if (!startTime || !service.durationMinutes) return null;
-    const start = new Date(startTime);
-    const end = new Date(start.getTime() + service.durationMinutes * 60000);
-    return end.toISOString().replace('T', ' ').slice(0, 19);
-  };
+ // Auto-calculate end time based on service duration
+ const getEndTime = (startTime) => {
+  if (!startTime || !service.durationMinutes) return null;
+  
+  // Parse the datetime string manually
+  const [datePart, timePart] = startTime.split('T');
+  const [year, month, day] = datePart.split('-').map(Number);
+  const [hours, minutes] = timePart.split(':').map(Number);
+  
+  // Create date object with explicit values
+  const start = new Date(year, month - 1, day, hours, minutes, 0);
+  
+  // Add duration
+  const end = new Date(start.getTime() + service.durationMinutes * 60000);
+  
+  // Format back to ISO string
+  const endYear = end.getFullYear();
+  const endMonth = String(end.getMonth() + 1).padStart(2, '0');
+  const endDay = String(end.getDate()).padStart(2, '0');
+  const endHours = String(end.getHours()).padStart(2, '0');
+  const endMinutes = String(end.getMinutes()).padStart(2, '0');
+  
+  return `${endYear}-${endMonth}-${endDay}T${endHours}:${endMinutes}:00`;
+};
 
   // Get minimum date (next hour)
   const getMinDate = () => {
@@ -57,43 +75,46 @@ const QuickBookModal = ({ service, onSubmit, onClose, userEmail }) => {
   const handleSubmit = async (e) => {
     e.preventDefault();
     if (!validateForm()) return;
-
+  
     setLoading(true);
     
-    // Use the correct field name from the service object
     const contractorId = service.contractorID || service.contractorId;
     
-    // Ensure we have a contractor ID
     if (!contractorId) {
       setErrors({ submit: 'Service contractor information is missing. Please try another service.' });
       setLoading(false);
       return;
     }
     
-    // Format the datetime string correctly
-    const startDateTime = formData.startTime + ':00';
-    const endDateTime = getEndTime(formData.startTime);
+    // Ensure both times have seconds
+    let startDateTime = formData.startTime;
+    if (startDateTime && startDateTime.length === 16) { // "2025-05-20T10:00" has length 16
+      startDateTime = startDateTime + ':00';
+    }
+
+
+    let endDateTime = getEndTime(formData.startTime);
     
-    console.log('Service object in modal:', service); // Debug log
-    console.log('Contractor ID:', contractorId); // Debug log
+    console.log('Service duration:', service.durationMinutes, 'minutes');
+    console.log('Start time:', startDateTime);  // Should now be 2025-05-21T10:00:00
+    console.log('End time:', endDateTime);     // Already has :00
     
     const bookingData = {
       serviceId: service.id,
       contractorId: contractorId,
-      startTime: startDateTime,
+      startTime: startDateTime,  // Now with seconds
       endTime: endDateTime,
       location: service.location || 'Sydney, Australia',
       price: service.price,
       notes: formData.notes || ''
     };
-
-    console.log('Booking data being sent:', bookingData); // Debug log
-
+  
+    console.log('Booking data being sent:', bookingData);
+  
     try {
       await onSubmit(bookingData);
     } catch (error) {
       console.error('Booking error:', error);
-      // More detailed error handling
       if (error.message) {
         setErrors({ submit: error.message });
       } else if (error.fields) {

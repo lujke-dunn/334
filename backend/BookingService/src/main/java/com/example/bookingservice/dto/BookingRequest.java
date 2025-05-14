@@ -25,12 +25,12 @@ public class BookingRequest {
 
     @NotNull(message = "Start time is required")
     @Future(message = "Start time must be in the future")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime startTime;
 
     @NotNull(message = "End time is required")
     @Future(message = "End time must be in the future")
-    @JsonFormat(pattern = "yyyy-MM-dd HH:mm:ss")
+    @JsonFormat(pattern = "yyyy-MM-dd'T'HH:mm:ss")
     private LocalDateTime endTime;
 
     private String location;

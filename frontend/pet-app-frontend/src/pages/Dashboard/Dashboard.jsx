@@ -57,15 +57,24 @@ const Dashboard = () => {
     // Initialize user profile for this tab
     initializeTabProfile(email, role);
     
-    // Load data based on role
+    // Load customer data immediately if customer
     if (role === 'CUSTOMER') {
       loadCustomerDashboard();
-    } else if (role === 'CONTRACTOR') {
-      loadContractorDashboard();
+      setLoading(false);
     }
+    // For contractors, loading will be handled after profile initialization
     
-    setLoading(false);
   }, [navigate]);
+  
+  // Add this useEffect to load contractor data when profile is ready
+  useEffect(() => {
+    if (userRole === 'CONTRACTOR' && userProfile.id && tabDataRef.current.initialized) {
+      console.log('🔄 Profile initialized, loading contractor dashboard...');
+      loadContractorDashboard().finally(() => {
+        setLoading(false);
+      });
+    }
+  }, [userProfile.id, userRole, tabDataRef.current.initialized]);
   
   // Add this function to generate a unique tab ID
   const generateTabId = () => {
@@ -109,6 +118,8 @@ const Dashboard = () => {
       }
     } catch (error) {
       console.error('❌ Error initializing profile:', error);
+      setLoading(false); // Make sure to stop loading even on error
+      
       if (error.message.includes('authentication') || error.message.includes('token')) {
         // If it's an auth error, redirect to login
         logout();
@@ -177,23 +188,33 @@ const Dashboard = () => {
     try {
       const contractorId = getContractorId();
       if (!contractorId) {
-        console.error('No contractor ID available');
+        console.error('❌ No contractor ID available for loading dashboard');
         return;
       }
+      
+      console.log('🔄 Loading contractor dashboard for ID:', contractorId);
       
       // Load contractor's services
       const response = await fetch(`http://localhost:8082/api/services/contractor/${contractorId}`);
       if (response.ok) {
         const data = await response.json();
+        console.log('✅ Loaded contractor services:', data);
         setServices(data);
         
         // Update profile with service count
         const updatedProfile = { ...userProfile, hasServices: data.length > 0 };
         setUserProfile(updatedProfile);
+      } else {
+        console.error('❌ Failed to load contractor services:', response.status, response.statusText);
       }
     } catch (error) {
-      console.error('Error loading contractor dashboard:', error);
+      console.error('❌ Error loading contractor dashboard:', error);
     }
+  };
+  
+  // Add refresh function for when services are created/deleted
+  const refreshContractorServices = async () => {
+    await loadContractorDashboard();
   };
   
   const handleLocationSubmit = async (locationData) => {
@@ -248,25 +269,14 @@ const Dashboard = () => {
       if (response.ok) {
         const newService = await response.json();
         console.log('✅ Service created successfully:', newService); // Debug log
-        console.log('🔄 Current services before update:', services); // Debug log
-        
-        setServices(prev => {
-          const updated = [...prev, newService];
-          console.log('🔄 Updated services list:', updated); // Debug log
-          return updated;
-        });
-        
-        // Update profile
-        const updatedProfile = { ...userProfile, hasServices: true };
-        setUserProfile(updatedProfile);
         
         setShowCreateServiceModal(false);
         
-        // Refresh with delay
+        // Refresh the contractor dashboard to get updated services
         setTimeout(() => {
-          console.log('🔄 Refreshing dashboard...'); // Debug log
-          loadContractorDashboard();
-        }, 1000);
+          console.log('🔄 Refreshing contractor services...'); // Debug log
+          refreshContractorServices();
+        }, 500);
       } else {
         const error = await response.text();
         console.error('❌ Failed to create service:', error);
@@ -303,8 +313,8 @@ const Dashboard = () => {
       });
       
       if (response.ok) {
-        setServices(prev => prev.filter(service => service.id !== serviceId));
-        loadContractorDashboard();
+        // Refresh the contractor dashboard to get updated services
+        refreshContractorServices();
       } else {
         console.error('Failed to delete service');
         alert('Failed to delete service. Please try again.');

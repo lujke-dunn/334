@@ -19,7 +19,11 @@ public class ServiceInfo {
     private ServiceCategory category;
     private BigDecimal price;
     private Integer durationMinutes;
-    private Long contractorId;
+    private Long contractorID;
     private String contractorName;
     private String contractorEmail;
+
+    public Long getContractorID() {
+        return contractorID;
+    }
 }
