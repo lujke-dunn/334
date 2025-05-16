@@ -32,7 +32,7 @@ const ContractorDashboard = ({
   }
   
   if (activeTab === 'bookings') {
-    return <ContractorBookings />;
+    return <ContractorBookings contractorId={userProfile.id} />;
   }
   
   return null;

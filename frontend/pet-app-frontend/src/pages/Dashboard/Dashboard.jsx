@@ -5,6 +5,7 @@ import DashboardSidebar from './DashboardSidebar';
 import DashboardHeader from './DashboardHeader';
 import CustomerDashboard from './CustomerDashboard';
 import ContractorDashboard from './ContractorDashboard/ContractorDashboard';
+import ChatComponent from './Chat/ChatComponent';
 import LocationModal from './Modals/LocationModal';
 import CreateServiceModal from './Modals/CreateServiceModal';
 import '../../styles/Dashboard.css';
@@ -349,6 +350,61 @@ const Dashboard = () => {
       console.error('Error searching services:', error);
     }
   };
+
+  // Add function to render content based on active tab
+  const renderContent = () => {
+    switch (activeTab) {
+      case 'overview':
+        if (userRole === 'CUSTOMER') {
+          return <CustomerDashboard services={services} contractors={contractors} />;
+        } else {
+          return (
+            <ContractorDashboard 
+              services={services} 
+              activeTab={activeTab}
+              userProfile={userProfile}
+              onLocationUpdate={() => setShowLocationModal(true)}
+              onCreateService={() => setShowCreateServiceModal(true)}
+              onDeleteService={handleDeleteService}
+            />
+          );
+        }
+      case 'services':
+        return (
+          <ContractorDashboard 
+            services={services} 
+            activeTab={activeTab}
+            userProfile={userProfile}
+            onLocationUpdate={() => setShowLocationModal(true)}
+            onCreateService={() => setShowCreateServiceModal(true)}
+            onDeleteService={handleDeleteService}
+          />
+        );
+      case 'bookings':
+        return (
+          <ContractorDashboard 
+            services={services} 
+            activeTab={activeTab}
+            userProfile={userProfile}
+            onLocationUpdate={() => setShowLocationModal(true)}
+            onCreateService={() => setShowCreateServiceModal(true)}
+            onDeleteService={handleDeleteService}
+          />
+        );
+      case 'chat':
+        return (
+          <ChatComponent 
+            userRole={userRole}
+            currentUserId={userProfile.id}
+            currentUserName={userProfile.name}
+          />
+        );
+      case 'profile':
+        return <div>Profile content coming soon...</div>;
+      default:
+        return renderContent();
+    }
+  };
   
   if (loading) {
     return (
@@ -379,21 +435,7 @@ const Dashboard = () => {
         />
         
         <div className="dashboard-content">
-          {userRole === 'CUSTOMER' ? (
-            <CustomerDashboard 
-              services={services} 
-              contractors={contractors} 
-            />
-          ) : (
-            <ContractorDashboard 
-              services={services} 
-              activeTab={activeTab}
-              userProfile={userProfile}
-              onLocationUpdate={() => setShowLocationModal(true)}
-              onCreateService={() => setShowCreateServiceModal(true)}
-              onDeleteService={handleDeleteService}
-            />
-          )}
+          {renderContent()}
         </div>
       </main>
       

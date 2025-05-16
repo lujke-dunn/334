@@ -1,0 +1,540 @@
+/* Enhanced Recent Activity - Cohesive Color Scheme */
+
+.section-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-bottom: 32px;
+    padding-bottom: 16px;
+    border-bottom: 1px solid #f1f5f9;
+  }
+  
+  .section-header h2 {
+    margin: 0;
+    font-size: 1.625rem;
+    font-weight: 700;
+    color: #0f172a;
+    letter-spacing: -0.025em;
+  }
+  
+  .refresh-btn {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    padding: 10px 16px;
+    background-color: white;
+    border: 1px solid #e2e8f0;
+    border-radius: 8px;
+    font-size: 0.875rem;
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    font-weight: 500;
+  }
+  
+  .refresh-btn:hover {
+    background-color: #f97316;
+    border-color: #f97316;
+    color: white;
+  }
+  
+  .refresh-btn svg {
+    width: 16px;
+    height: 16px;
+  }
+  
+  .activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: 12px;
+  }
+  
+  .activity-loading {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: 48px;
+    color: #64748b;
+  }
+  
+  .loading-spinner {
+    width: 32px;
+    height: 32px;
+    border: 2px solid #f1f5f9;
+    border-top: 2px solid #f97316;
+    border-radius: 50%;
+    animation: spin 1s linear infinite;
+    margin-bottom: 16px;
+  }
+  
+  @keyframes spin {
+    0% { transform: rotate(0deg); }
+    100% { transform: rotate(360deg); }
+  }
+  
+  .activity-item {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+    padding: 16px 20px;
+    background: white;
+    border-radius: 12px;
+    border: 1px solid #f1f5f9;
+    transition: all 0.2s ease;
+    position: relative;
+    min-height: 80px;
+  }
+  
+  .activity-item:hover {
+    border-color: #fed7aa;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+  }
+  
+  /* Refined color scheme for activity types */
+  .activity-item[data-type="booking-request"] {
+    border-left: 3px solid #f97316;
+    background: linear-gradient(135deg, #fff7ed 0%, #ffffff 100%);
+  }
+  
+  .activity-item[data-type="booking-confirmed"] {
+    border-left: 3px solid #10b981;
+    background: linear-gradient(135deg, #f0fdf4 0%, #ffffff 100%);
+  }
+  
+  .activity-item[data-type="booking-completed"] {
+    border-left: 3px solid #3b82f6;
+    background: linear-gradient(135deg, #eff6ff 0%, #ffffff 100%);
+  }
+  
+  .activity-item[data-type="booking-cancelled"] {
+    border-left: 3px solid #ef4444;
+    background: linear-gradient(135deg, #fef2f2 0%, #ffffff 100%);
+    opacity: 0.9;
+  }
+  
+  .activity-item[data-type="service-created"] {
+    border-left: 3px solid #8b5cf6;
+    background: linear-gradient(135deg, #faf5ff 0%, #ffffff 100%);
+  }
+  
+  /* Empty state styling */
+  .activity-item.empty {
+    flex-direction: column;
+    align-items: center;
+    text-align: center;
+    padding: 40px;
+    background: #fafafa;
+    border: 1px dashed #e2e8f0;
+    min-height: auto;
+  }
+  
+  .activity-item.empty svg {
+    width: 48px;
+    height: 48px;
+    margin-bottom: 16px;
+    color: #cbd5e1;
+  }
+  
+  .activity-item.empty h3 {
+    margin: 0 0 8px;
+    color: #475569;
+    font-size: 1rem;
+    font-weight: 600;
+  }
+  
+  .activity-item.empty p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #64748b;
+  }
+  
+  /* Activity icon styling with better colors */
+  .activity-icon {
+    flex-shrink: 0;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    position: relative;
+  }
+  
+  .activity-icon svg {
+    width: 24px;
+    height: 24px;
+  }
+  
+  /* Purple and blue - darker, less washed out */
+  .bg-blue-100 {
+    background-color: #bfdbfe;
+    border: 1px solid #93c5fd;
+  }
+  
+  .text-blue-600 {
+    color: #1d4ed8;
+  }
+  
+  .bg-purple-100 {
+    background-color: #ddd6fe;
+    border: 1px solid #c4b5fd;
+  }
+  
+  .text-purple-600 {
+    color: #7c3aed;
+  }
+  
+  /* Darker background gradients for blue and purple activities */
+  .activity-item[data-type="booking-completed"] {
+    border-left: 3px solid #1d4ed8;
+    background: linear-gradient(135deg, #dbeafe 0%, #ffffff 100%);
+  }
+  
+  .activity-item[data-type="service-created"] {
+    border-left: 3px solid #7c3aed;
+    background: linear-gradient(135deg, #ede9fe 0%, #ffffff 100%);
+  }
+  
+  /* Add remaining icon color scheme */
+  .bg-orange-100 {
+    background-color: #fed7aa;
+    border: 1px solid #fdba74;
+  }
+  
+  .text-orange-600 {
+    color: #ea580c;
+  }
+  
+  .bg-green-100 {
+    background-color: #d1fae5;
+    border: 1px solid #a7f3d0;
+  }
+  
+  .text-green-600 {
+    color: #059669;
+  }
+  
+  .bg-red-100 {
+    background-color: #fee2e2;
+    border: 1px solid #fca5a5;
+  }
+  
+  .text-red-600 {
+    color: #dc2626;
+  }
+  
+  .bg-gray-100 {
+    background-color: #f1f5f9;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .text-gray-600 {
+    color: #475569;
+  }
+  
+  /* Centered text for activity content */
+  .activity-content {
+    flex-grow: 1;
+    min-width: 0;
+    text-align: center;
+  }
+  
+  .activity-content h4 {
+    margin: 0 0 4px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #0f172a;
+    line-height: 1.5;
+  }
+  
+  .activity-content p {
+    margin: 0 0 8px;
+    font-size: 0.875rem;
+    color: #64748b;
+    line-height: 1.5;
+  }
+  
+  /* Refined rating display */
+  .activity-rating {
+    display: flex;
+    align-items: center;
+    gap: 8px;
+    margin-bottom: 8px;
+    padding: 6px 12px;
+    background-color: #fefce8;
+    border-radius: 8px;
+    border: 1px solid #fde047;
+    width: fit-content;
+  }
+  
+  .activity-rating .stars {
+    display: flex;
+    gap: 2px;
+  }
+  
+  .activity-rating .star {
+    color: #d1d5db;
+    font-size: 0.875rem;
+  }
+  
+  .activity-rating .star.filled {
+    color: #eab308;
+  }
+  
+  .activity-rating span:last-child {
+    font-size: 0.75rem;
+    color: #a16207;
+    font-weight: 500;
+  }
+  
+  /* Activity meta information */
+  .activity-meta {
+    display: flex;
+    align-items: center;
+    gap: 12px;
+  }
+  
+  .activity-time {
+    font-size: 0.75rem;
+    color: #94a3b8;
+    font-weight: 500;
+    background-color: #f8fafc;
+    padding: 4px 8px;
+    border-radius: 6px;
+    border: 1px solid #e2e8f0;
+  }
+  
+  .activity-amount {
+    font-size: 0.875rem;
+    color: #059669;
+    font-weight: 700;
+    background-color: #f0fdf4;
+    padding: 6px 10px;
+    border-radius: 8px;
+    border: 1px solid #bbf7d0;
+  }
+  
+  /* Stats grid with refined orange theme */
+  .contractor-stats {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
+    gap: 20px;
+    margin-bottom: 32px;
+  }
+  
+  .stat-card {
+    background: white;
+    border-radius: 12px;
+    padding: 24px;
+    border: 1px solid #f1f5f9;
+    transition: all 0.2s ease;
+    position: relative;
+  }
+  
+  .stat-card:hover {
+    border-color: #fed7aa;
+    box-shadow: 0 4px 12px rgba(15, 23, 42, 0.04);
+  }
+  
+  .stat-icon {
+    width: 48px;
+    height: 48px;
+    background-color: #fff7ed;
+    border-radius: 12px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    margin-bottom: 16px;
+    border: 1px solid #fed7aa;
+  }
+  
+  .stat-icon svg {
+    width: 24px;
+    height: 24px;
+    color: #ea580c;
+  }
+  
+  .stat-content h3 {
+    margin: 0 0 8px;
+    font-size: 0.75rem;
+    font-weight: 600;
+    color: #64748b;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+  }
+  
+  .stat-number {
+    margin: 0;
+    font-size: 1.875rem;
+    font-weight: 700;
+    color: #0f172a;
+    line-height: 1;
+  }
+  
+  /* Better centered welcome section */
+  .welcome-section {
+    background: white;
+    border: 1px solid #f1f5f9;
+    padding: 32px;
+    border-radius: 12px;
+    margin-bottom: 32px;
+    text-align: center;
+    box-shadow: 0 1px 3px rgba(0, 0, 0, 0.02);
+  }
+  
+  .welcome-section h1 {
+    margin: 0 0 8px;
+    font-size: 2rem;
+    font-weight: 700;
+    letter-spacing: -0.025em;
+    color: #0f172a;
+  }
+  
+  .welcome-section p {
+    margin: 0;
+    font-size: 1rem;
+    color: #64748b;
+  }
+  
+  /* Refined alert banner */
+  .alert-banner {
+    background-color: #fff7ed;
+    border: 1px solid #fed7aa;
+    border-radius: 12px;
+    padding: 20px;
+    margin-bottom: 24px;
+  }
+  
+  .alert-content {
+    display: flex;
+    align-items: center;
+    gap: 16px;
+  }
+  
+  .alert-content svg {
+    width: 24px;
+    height: 24px;
+    color: #f97316;
+    flex-shrink: 0;
+  }
+  
+  .alert-content div {
+    flex-grow: 1;
+  }
+  
+  .alert-content h3 {
+    margin: 0 0 4px;
+    font-size: 1rem;
+    font-weight: 600;
+    color: #9a3412;
+  }
+  
+  .alert-content p {
+    margin: 0;
+    font-size: 0.875rem;
+    color: #c2410c;
+  }
+  
+  .alert-button {
+    padding: 8px 16px;
+    background-color: #f97316;
+    color: white;
+    border: none;
+    border-radius: 8px;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    white-space: nowrap;
+  }
+  
+  .alert-button:hover {
+    background-color: #ea580c;
+  }
+  
+  /* Responsive design */
+  @media (max-width: 768px) {
+    .section-header {
+      flex-direction: column;
+      align-items: stretch;
+      gap: 16px;
+    }
+    
+    .welcome-section {
+      padding: 24px;
+    }
+    
+    .welcome-section h1 {
+      font-size: 1.75rem;
+    }
+    
+    .contractor-stats {
+      grid-template-columns: repeat(auto-fit, minmax(160px, 1fr));
+      gap: 16px;
+    }
+    
+    .stat-card {
+      padding: 20px;
+    }
+    
+    .stat-number {
+      font-size: 1.625rem;
+    }
+    
+    .activity-item {
+      padding: 16px;
+      gap: 12px;
+      min-height: auto;
+    }
+    
+    .activity-icon {
+      width: 40px;
+      height: 40px;
+    }
+    
+    .activity-icon svg {
+      width: 20px;
+      height: 20px;
+    }
+    
+    .activity-meta {
+      flex-direction: column;
+      align-items: flex-start;
+      gap: 8px;
+    }
+    
+    .alert-content {
+      flex-direction: column;
+      text-align: center;
+    }
+    
+    .alert-button {
+      align-self: center;
+    }
+  }
+  
+  /* Clean animations */
+  .activity-item {
+    animation: fadeIn 0.3s ease-out;
+  }
+  
+  @keyframes fadeIn {
+    from {
+      opacity: 0;
+      transform: translateY(10px);
+    }
+    to {
+      opacity: 1;
+      transform: translateY(0);
+    }
+  }
+  
+  /* Focus states for accessibility */
+  .refresh-btn:focus {
+    outline: 2px solid #f97316;
+    outline-offset: 2px;
+  }
+  
+  .alert-button:focus {
+    outline: 2px solid #f97316;
+    outline-offset: 2px;
+  }

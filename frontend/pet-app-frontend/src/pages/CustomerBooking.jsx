@@ -1,5 +1,6 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from './Toast';
+import '../styles/CustomerBookingListPage.css';
 
 const CustomerBookings = ({ userEmail }) => {
   const [bookings, setBookings] = useState([]);

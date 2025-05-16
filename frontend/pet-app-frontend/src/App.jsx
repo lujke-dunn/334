@@ -1,5 +1,6 @@
 import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-dom';
 import { isAuthenticated } from './utils/api';
+import { ChatProvider } from './contexts/ChatContext';
 import Login from './pages/Login';
 import Dashboard from './pages/Dashboard/Dashboard';
 import Profile from './pages/Profile';
@@ -15,29 +16,31 @@ function App() {
   return (
     <Router>
       <div className="App">
-        <Routes>
-          {/* Root path - redirect based on auth status */}
-          <Route path="/" element={<RootRedirect />} />
+        <ChatProvider>
+          <Routes>
+            {/* Root path - redirect based on auth status */}
+            <Route path="/" element={<RootRedirect />} />
           
-          {/* Login route */}
-          <Route path="/login" element={<Login />} />
+            {/* Login route */}
+            <Route path="/login" element={<Login />} />
           
-          {/* Protected routes */}
-          <Route path="/dashboard" element={
-            <ProtectedRoute>
-              <Dashboard />
-            </ProtectedRoute>
-          } />
+            {/* Protected routes */}
+            <Route path="/dashboard" element={
+              <ProtectedRoute>
+                <Dashboard />
+              </ProtectedRoute>
+            } />
           
-          <Route path="/profile" element={
-            <ProtectedRoute>
-              <Profile />
-            </ProtectedRoute>
-          } />
+            <Route path="/profile" element={
+              <ProtectedRoute>
+                <Profile />
+              </ProtectedRoute>
+            } />
           
-          {/* Catch all route - redirect to dashboard or login */}
-          <Route path="*" element={<RootRedirect />} />
-        </Routes>
+            {/* Catch all route - redirect to dashboard or login */}
+            <Route path="*" element={<RootRedirect />} />
+          </Routes>
+        </ChatProvider> 
       </div>
     </Router>
   );

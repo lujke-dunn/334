@@ -71,6 +71,33 @@ const DashboardSidebar = ({
             </button>
           </>
         )}
+
+        {/* Chat button - available for both customers and contractors */}
+        <button 
+          className={`nav-button ${activeTab === 'chat' ? 'active' : ''}`}
+          onClick={() => setActiveTab('chat')}
+        >
+          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+            <path fillRule="evenodd" d="M10 2c-2.236 0-4.43.18-6.57.524C1.993 2.755 1 4.014 1 5.426v5.148c0 1.413.993 2.67 2.43 2.902 1.168.188 2.352.327 3.55.414.28.02.521.18.642.413l1.713 3.293a.75.75 0 001.33 0l1.713-3.293a.783.783 0 01.642-.413 41.102 41.102 0 003.55-.414c1.437-.231 2.43-1.49 2.43-2.902V5.426c0-1.413-.993-2.67-2.43-2.902A41.289 41.289 0 0010 2zM6.75 6a.75.75 0 000 1.5h6.5a.75.75 0 000-1.5h-6.5zm0 2.5a.75.75 0 000 1.5h3.5a.75.75 0 000-1.5h-3.5z" clipRule="evenodd"></path>
+          </svg>
+          Chat
+          {/* Show notification badge for unread messages */}
+          <span className="nav-notification-badge">3</span>
+        </button>
+
+        {/* Customer specific navigation */}
+        {userRole === 'CUSTOMER' && (
+          <button 
+            className={`nav-button ${activeTab === 'bookings' ? 'active' : ''}`}
+            onClick={() => setActiveTab('bookings')}
+          >
+            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 20 20" fill="currentColor">
+              <path d="M6.75 9.25a.75.75 0 000 1.5h6.5a.75.75 0 000-1.5h-6.5z"></path>
+              <path fillRule="evenodd" d="M3 5.25C3 3.45 4.46 2 6.25 2h7.5C15.54 2 17 3.45 17 5.25v9.5c0 1.8-1.46 3.25-3.25 3.25h-7.5C4.46 18 3 16.55 3 15.75v-9.5zM6.25 3.5A1.75 1.75 0 004.5 5.25v9.5c0 .97.78 1.75 1.75 1.75h7.5c.97 0 1.75-.78 1.75-1.75v-9.5c0-.97-.78-1.75-1.75-1.75h-7.5z" clipRule="evenodd"></path>
+            </svg>
+            My Bookings
+          </button>
+        )}
         
         <button 
           className={`nav-button ${activeTab === 'profile' ? 'active' : ''}`}
