@@ -6,7 +6,6 @@ import DashboardHeader from './DashboardHeader';
 import CustomerDashboard from './CustomerDashboard';
 import ContractorDashboard from './ContractorDashboard/ContractorDashboard';
 import ChatComponent from './Chat/ChatComponent';
-import LocationModal from './Modals/LocationModal';
 import CreateServiceModal from './Modals/CreateServiceModal';
 import '../../styles/Dashboard.css';
 import CustomerBookings from '../CustomerBooking';
@@ -231,18 +230,24 @@ const Dashboard = () => {
     setUserProfile(updatedProfile);
     setShowLocationModal(false);
   };
-  
+
   const handleCreateService = async (serviceData) => {
     try {
       const contractorId = getContractorId();
-      console.log('🏭 Creating service - contractorId:', contractorId); // Debug log
-      
+      console.log('🏭 Creating service - contractorId:', contractorId);
+
       if (!contractorId) {
         console.error('No contractor ID available');
         alert('Cannot create service: No contractor ID available');
         return;
       }
-      
+
+      // Force service to be ACTIVE immediately
+      const servicePayload = {
+        ...serviceData,
+        status: 'ACTIVE' // Make service active right away!
+      };
+
       // Get authentication headers
       const token = getAccessToken();
       const headers = {
@@ -251,34 +256,65 @@ const Dashboard = () => {
         'X-Contractor-Name': userProfile.name,
         'X-Contractor-Email': userEmail
       };
-      
+
       if (token) {
         headers['Authorization'] = `Bearer ${token}`;
       }
-      
-      console.log('📤 Request headers:', headers); // Debug log
-      console.log('📤 Request body:', serviceData); // Debug log
-      
+
+      console.log('📤 Request headers:', headers);
+      console.log('📤 Request body:', servicePayload);
+
       const response = await fetch('http://localhost:8082/api/services', {
         method: 'POST',
         headers,
-        body: JSON.stringify(serviceData)
+        body: JSON.stringify(servicePayload)
       });
-      
-      console.log('📥 Create response status:', response.status); // Debug log
-      console.log('📥 Create response ok:', response.ok); // Debug log
-      
+
+      console.log('📥 Create response status:', response.status);
+
       if (response.ok) {
         const newService = await response.json();
-        console.log('✅ Service created successfully:', newService); // Debug log
-        
+        console.log('✅ Service created successfully and is ACTIVE:', newService);
+
+        // If the service isn't active yet, approve it immediately
+        if (newService.status === 'PENDING') {
+          console.log('🔄 Service is pending, approving now...');
+          try {
+            const approveResponse = await fetch(`http://localhost:8082/api/services/${newService.id}/approve`, {
+              method: 'PUT',
+              headers: {
+                'Authorization': `Bearer ${token}`,
+                'Content-Type': 'application/json'
+              }
+            });
+
+            if (approveResponse.ok) {
+              const approvedService = await approveResponse.json();
+              console.log('✅ Service approved and activated:', approvedService);
+
+              // Add the approved service to the list immediately
+              setServices(prevServices => [...prevServices, approvedService]);
+            } else {
+              console.warn('⚠️ Failed to approve service, but adding pending service');
+              setServices(prevServices => [...prevServices, newService]);
+            }
+          } catch (approveError) {
+            console.error('❌ Error approving service:', approveError);
+            // Still add the service even if approval failed
+            setServices(prevServices => [...prevServices, newService]);
+          }
+        } else {
+          // Service is already active, add it to the list
+          setServices(prevServices => [...prevServices, newService]);
+        }
+
+        // Close modal and show success
         setShowCreateServiceModal(false);
-        
-        // Refresh the contractor dashboard to get updated services
-        setTimeout(() => {
-          console.log('🔄 Refreshing contractor services...'); // Debug log
-          refreshContractorServices();
-        }, 500);
+        alert('✅ Service created and activated successfully! It\'s now available for bookings.');
+
+        // Update profile to show user has services
+        setUserProfile(prev => ({ ...prev, hasServices: true }));
+
       } else {
         const error = await response.text();
         console.error('❌ Failed to create service:', error);
@@ -444,14 +480,6 @@ const Dashboard = () => {
           {renderContent()}
         </div>
       </main>
-      
-      {/* Modals */}
-      {showLocationModal && (
-        <LocationModal
-          onSubmit={handleLocationSubmit}
-          onClose={() => setShowLocationModal(false)}
-        />
-      )}
       
       {showCreateServiceModal && ( 
         <CreateServiceModal

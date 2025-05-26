@@ -478,19 +478,6 @@ const QuickBookModal = ({ service, onSubmit, onClose, userEmail }) => {
           </div>
         </form>
 
-        {/* Terms Notice */}
-        <div style={{
-          padding: '16px 24px',
-          backgroundColor: '#f8f9fa',
-          borderTop: '1px solid #e5e5e5',
-          borderRadius: '0 0 12px 12px'
-        }}>
-          <small style={{ color: '#666', fontSize: '12px', lineHeight: '1.5' }}>
-            By booking this service, you agree to our terms and conditions. 
-            Cancellations made less than 24 hours before the service may incur fees.
-          </small>
-        </div>
-
         {/* Add CSS for spinner animation */}
         <style>
           {`
