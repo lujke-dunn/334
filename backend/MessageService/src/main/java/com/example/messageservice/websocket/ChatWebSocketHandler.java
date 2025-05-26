@@ -39,7 +39,14 @@ public class ChatWebSocketHandler implements WebSocketHandler {
     public void afterConnectionEstablished(WebSocketSession session) throws Exception {
         log.info("WebSocket connection established: {}", session.getId());
 
-        // Extract conversation and user info from query parameters
+        // Send welcome message immediately - don't require conversationId
+        sendToSession(session, WebSocketMessage.builder()
+                .type(WebSocketMessage.MessageType.SYSTEM)
+                .content("Connected successfully")
+                .sendTime(LocalDateTime.now())
+                .build());
+
+        // Extract conversation and user info from query parameters (optional)
         String query = session.getUri().getQuery();
         if (query != null) {
             String[] params = query.split("&");
@@ -57,17 +64,11 @@ public class ChatWebSocketHandler implements WebSocketHandler {
                 }
             }
 
+            // Only join conversation if BOTH parameters are provided
             if (conversationId != null && userId != null) {
                 joinConversation(session, conversationId, userId);
             }
         }
-
-        // Send welcome message
-        sendToSession(session, WebSocketMessage.builder()
-                .type(WebSocketMessage.MessageType.SYSTEM)
-                .content("Connected successfully")
-                .sendTime(LocalDateTime.now())
-                .build());
     }
 
     @Override
@@ -94,7 +95,7 @@ public class ChatWebSocketHandler implements WebSocketHandler {
                     break;
 
                 case CONNECTION:
-                    handleConnectionMessage(session, wsMessage);
+                    handleJoinConversation(session, wsMessage);
                     break;
 
                 case HEARTBEAT:
@@ -123,6 +124,19 @@ public class ChatWebSocketHandler implements WebSocketHandler {
             sendErrorMessage(session, "Error processing message: " + e.getMessage());
         }
     }
+
+    private void handleJoinConversation(WebSocketSession session, WebSocketMessage wsMessage) {
+        if (wsMessage.getConversationId() != null && wsMessage.getSenderId() != null) {
+            joinConversation(session, wsMessage.getConversationId(), wsMessage.getSenderId());
+
+            sendToSession(session, WebSocketMessage.builder()
+                    .type(WebSocketMessage.MessageType.SYSTEM)
+                    .content("Joined conversation " + wsMessage.getConversationId())
+                    .sendTime(LocalDateTime.now())
+                    .build());
+        }
+    }
+
 
     private void handleAuthMessage(WebSocketSession session, WebSocketMessage wsMessage) {
         try {
