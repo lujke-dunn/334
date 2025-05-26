@@ -1,9 +1,15 @@
 package com.example.bookingservice.controller;
 
+
 import com.example.bookingservice.dto.BookingRequest;
 import com.example.bookingservice.dto.BookingResponse;
+import com.example.bookingservice.dto.UserInfo;
 import com.example.bookingservice.exception.BookingException;
+import com.example.bookingservice.model.Booking;
+import com.example.bookingservice.repository.BookingRepository;
+import com.example.bookingservice.security.SecurityService;
 import com.example.bookingservice.service.BookingService;
+import com.example.bookingservice.service.UserService;
 import jakarta.persistence.EntityNotFoundException;
 import jakarta.validation.Valid;
 import lombok.RequiredArgsConstructor;
@@ -17,6 +23,9 @@ import org.springframework.web.bind.annotation.*;
 
 import java.nio.file.AccessDeniedException;
 import java.security.Principal;
+import java.time.LocalDateTime;
+import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -26,6 +35,90 @@ import java.util.Map;
 public class BookingController {
 
     private final BookingService bookingService;
+    private final UserService userService;
+    private final SecurityService securityService;
+    private final BookingRepository bookingRepository;
+
+
+    @GetMapping("/debug/auth")
+    public ResponseEntity<Map<String, Object>> debugAuth(Principal principal) {
+        Map<String, Object> debug = new HashMap<>();
+
+        try {
+            String userEmail = principal.getName();
+            debug.put("principalEmail", userEmail);
+            debug.put("principalClass", principal.getClass().getSimpleName());
+
+            // Test user service lookup
+            try {
+                Long userId = userService.getUserIdFromEmail(userEmail);
+                debug.put("userId", userId);
+            } catch (Exception e) {
+                debug.put("userIdError", e.getMessage());
+            }
+
+            try {
+                UserInfo userInfo = userService.getUserByEmail(userEmail);
+                debug.put("userInfo", userInfo);
+                debug.put("userRole", userInfo.getRole());
+            } catch (Exception e) {
+                debug.put("userInfoError", e.getMessage());
+            }
+
+            try {
+                String role = userService.getUserRoleFromEmail(userEmail);
+                debug.put("roleFromService", role);
+            } catch (Exception e) {
+                debug.put("roleError", e.getMessage());
+            }
+
+            // Test role checks
+            try {
+                boolean isCustomer = securityService.isUserCustomer(userEmail);
+                boolean isContractor = securityService.isUserContractor(userEmail);
+                boolean isAdmin = securityService.isUserAdmin(userEmail);
+
+                debug.put("isCustomer", isCustomer);
+                debug.put("isContractor", isContractor);
+                debug.put("isAdmin", isAdmin);
+            } catch (Exception e) {
+                debug.put("roleCheckError", e.getMessage());
+            }
+
+            // Test database access if we have a userId
+            try {
+                Long userId = userService.getUserIdFromEmail(userEmail);
+                List<Booking> customerBookings = bookingRepository.findByCustomerId(userId);
+                debug.put("customerBookingsCount", customerBookings.size());
+
+                List<Booking> contractorBookings = bookingRepository.findByContractorId(userId);
+                debug.put("contractorBookingsCount", contractorBookings.size());
+            } catch (Exception e) {
+                debug.put("databaseError", e.getMessage());
+            }
+
+            debug.put("status", "SUCCESS");
+
+        } catch (Exception e) {
+            debug.put("status", "ERROR");
+            debug.put("error", e.getMessage());
+            debug.put("errorType", e.getClass().getSimpleName());
+            debug.put("stackTrace", Arrays.toString(e.getStackTrace()));
+        }
+
+        return ResponseEntity.ok(debug);
+    }
+
+    // Also add this simple endpoint to bypass role checking
+    @GetMapping("/debug/simple")
+    public ResponseEntity<Map<String, Object>> debugSimple(Principal principal) {
+        Map<String, Object> debug = new HashMap<>();
+        debug.put("principalName", principal.getName());
+        debug.put("timestamp", LocalDateTime.now());
+        debug.put("message", "This endpoint works - authentication is OK");
+        return ResponseEntity.ok(debug);
+    }
+
 
     @PostMapping
     public ResponseEntity<BookingResponse> createBooking(

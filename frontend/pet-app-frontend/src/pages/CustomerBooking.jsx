@@ -1,6 +1,18 @@
 import React, { useState, useEffect } from 'react';
 import { useToast } from './Toast';
-import '../styles/CustomerBookingListPage.css';
+import {
+  Calendar,
+  Clock,
+  MapPin,
+  DollarSign,
+  Star,
+  MessageCircle,
+  AlertTriangle,
+  RefreshCw,
+  User,
+  Phone,
+  Mail
+} from 'lucide-react';
 
 const CustomerBookings = ({ userEmail }) => {
   const [bookings, setBookings] = useState([]);
@@ -18,7 +30,7 @@ const CustomerBookings = ({ userEmail }) => {
     try {
       const token = localStorage.getItem('accessToken');
       if (!token) {
-        console.log('No access token available');
+        showToast('Please log in to view your bookings', 'error');
         return;
       }
 
@@ -31,10 +43,8 @@ const CustomerBookings = ({ userEmail }) => {
 
       if (response.ok) {
         const data = await response.json();
-        console.log('Bookings loaded:', data);
-        setBookings(data.content || data); // Handle paginated response
+        setBookings(data.content || data);
       } else {
-        console.error('Failed to load bookings:', response.status);
         if (response.status === 401) {
           showToast('Please log in to view your bookings', 'error');
         } else {
@@ -51,7 +61,7 @@ const CustomerBookings = ({ userEmail }) => {
 
   const handleCancelBooking = async (bookingId) => {
     if (!window.confirm('Are you sure you want to cancel this booking?')) return;
-    
+
     try {
       const token = localStorage.getItem('accessToken');
       const response = await fetch(`http://localhost:8083/api/bookings/${bookingId}/cancel`, {
@@ -65,7 +75,7 @@ const CustomerBookings = ({ userEmail }) => {
 
       if (response.ok) {
         showToast('Booking cancelled successfully', 'success');
-        loadBookings(); // Refresh bookings
+        loadBookings();
       } else {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to cancel booking');
@@ -93,7 +103,7 @@ const CustomerBookings = ({ userEmail }) => {
 
       if (response.ok) {
         showToast('Dispute reported successfully', 'success');
-        loadBookings(); // Refresh bookings
+        loadBookings();
       } else {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to report dispute');
@@ -129,7 +139,7 @@ const CustomerBookings = ({ userEmail }) => {
       if (response.ok) {
         showToast('Review submitted successfully', 'success');
         closeReviewModal();
-        loadBookings(); // Refresh bookings
+        loadBookings();
       } else {
         const errorData = await response.json();
         throw new Error(errorData.message || 'Failed to submit review');
@@ -140,26 +150,35 @@ const CustomerBookings = ({ userEmail }) => {
     }
   };
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case 'PENDING': return '#f59e0b';
-      case 'CONFIRMED': return '#10b981';
-      case 'COMPLETED': return '#3b82f6';
-      case 'CANCELLED': return '#ef4444';
-      case 'NO_SHOW': return '#6b7280';
-      default: return '#6b7280';
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'PENDING': return '⏳';
-      case 'CONFIRMED': return '✅';
-      case 'COMPLETED': return '🎉';
-      case 'CANCELLED': return '❌';
-      case 'NO_SHOW': return '👻';
-      default: return '❓';
-    }
+  const getStatusConfig = (status) => {
+    const configs = {
+      PENDING: {
+        color: 'bg-yellow-100 text-yellow-800 border-yellow-200',
+        icon: '⏳',
+        label: 'Pending'
+      },
+      CONFIRMED: {
+        color: 'bg-green-100 text-green-800 border-green-200',
+        icon: '✅',
+        label: 'Confirmed'
+      },
+      COMPLETED: {
+        color: 'bg-blue-100 text-blue-800 border-blue-200',
+        icon: '🎉',
+        label: 'Completed'
+      },
+      CANCELLED: {
+        color: 'bg-red-100 text-red-800 border-red-200',
+        icon: '❌',
+        label: 'Cancelled'
+      },
+      NO_SHOW: {
+        color: 'bg-gray-100 text-gray-800 border-gray-200',
+        icon: '👻',
+        label: 'No Show'
+      }
+    };
+    return configs[status] || configs.PENDING;
   };
 
   const filteredBookings = bookings.filter(booking => {
@@ -185,221 +204,520 @@ const CustomerBookings = ({ userEmail }) => {
 
   if (loading) {
     return (
-      <div className="loading-container">
-        <div className="loading-spinner"></div>
-        <p>Loading your bookings...</p>
-      </div>
+        <div style={{
+          display: 'flex',
+          flexDirection: 'column',
+          alignItems: 'center',
+          justifyContent: 'center',
+          minHeight: '400px',
+          color: '#6b7280'
+        }}>
+          <div style={{
+            width: '40px',
+            height: '40px',
+            border: '4px solid #f3f4f6',
+            borderTop: '4px solid #3b82f6',
+            borderRadius: '50%',
+            animation: 'spin 1s linear infinite',
+            marginBottom: '16px'
+          }}></div>
+          <p style={{ fontSize: '16px', fontWeight: '500' }}>Loading your bookings...</p>
+        </div>
     );
   }
 
   return (
-    <div className="customer-bookings">
-      <ToastContainer />
-      
-      <div className="bookings-header">
-        <h2>My Bookings</h2>
-        <button onClick={loadBookings} className="refresh-button">
-          <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-            <path d="M23 4v6h-6"></path>
-            <path d="M1 20v-6h6"></path>
-            <path d="M20.49 9A9 9 0 0 0 5.64 5.64L1 10m22-6a9 9 0 0 1-14.85 14.85L23 14"></path>
-          </svg>
-          Refresh
-        </button>
-      </div>
-      
-      {/* Tabs */}
-      <div className="booking-tabs">
-        <button 
-          className={`tab-button ${activeTab === 'all' ? 'active' : ''}`}
-          onClick={() => setActiveTab('all')}
-        >
-          All ({counts.all})
-        </button>
-        <button 
-          className={`tab-button ${activeTab === 'pending' ? 'active' : ''}`}
-          onClick={() => setActiveTab('pending')}
-        >
-          Pending ({counts.pending})
-        </button>
-        <button 
-          className={`tab-button ${activeTab === 'confirmed' ? 'active' : ''}`}
-          onClick={() => setActiveTab('confirmed')}
-        >
-          Confirmed ({counts.confirmed})
-        </button>
-        <button 
-          className={`tab-button ${activeTab === 'completed' ? 'active' : ''}`}
-          onClick={() => setActiveTab('completed')}
-        >
-          Completed ({counts.completed})
-        </button>
-        <button 
-          className={`tab-button ${activeTab === 'cancelled' ? 'active' : ''}`}
-          onClick={() => setActiveTab('cancelled')}
-        >
-          Cancelled ({counts.cancelled})
-        </button>
-      </div>
+      <div style={{
+        maxWidth: '1200px',
+        margin: '0 auto',
+        padding: '24px',
+        backgroundColor: '#f9fafb',
+        minHeight: '100vh'
+      }}>
+        <ToastContainer />
 
-      {/* Bookings List */}
-      <div className="bookings-list">
-        {filteredBookings.length > 0 ? (
-          filteredBookings.map(booking => (
-            <div key={booking.id} className="booking-card">
-              <div className="booking-header">
-                <div className="booking-title">
-                  <h3>{booking.serviceName}</h3>
-                  <span 
-                    className="booking-status"
-                    style={{ color: getStatusColor(booking.status) }}
-                  >
-                    {getStatusIcon(booking.status)} {booking.status}
-                  </span>
-                </div>
-                <div className="booking-id">#{booking.id}</div>
-              </div>
-              
-              <div className="booking-details">
-                <div className="detail-row">
-                  <div className="detail-item">
-                    <strong>Contractor:</strong> {booking.contractorName}
-                  </div>
-                  <div className="detail-item">
-                    <strong>Price:</strong> ${booking.price}
-                  </div>
-                </div>
-                
-                <div className="detail-row">
-                  <div className="detail-item">
-                    <strong>Date:</strong> {new Date(booking.startTime).toLocaleDateString('en-AU', {
-                      weekday: 'long',
-                      year: 'numeric',
-                      month: 'long',
-                      day: 'numeric'
-                    })}
-                  </div>
-                  <div className="detail-item">
-                    <strong>Time:</strong> {new Date(booking.startTime).toLocaleTimeString('en-AU', {
-                      hour: 'numeric',
-                      minute: '2-digit'
-                    })} - {new Date(booking.endTime).toLocaleTimeString('en-AU', {
-                      hour: 'numeric',
-                      minute: '2-digit'
-                    })}
-                  </div>
-                </div>
-                
-                {booking.location && (
-                  <div className="detail-item">
-                    <strong>Location:</strong> {booking.location}
-                  </div>
-                )}
-                
-                {booking.notes && (
-                  <div className="detail-item">
-                    <strong>Notes:</strong> {booking.notes}
-                  </div>
-                )}
-
-                {booking.customerRating && (
-                  <div className="detail-item">
-                    <strong>Your Rating:</strong> 
-                    <div className="rating-display">
-                      {[...Array(5)].map((_, i) => (
-                        <span key={i} className={`star ${i < booking.customerRating ? 'filled' : 'empty'}`}>
-                          ★
-                        </span>
-                      ))}
-                    </div>
-                  </div>
-                )}
-              </div>
-
-              <div className="booking-actions">
-                {booking.status === 'PENDING' && (
-                  <button 
-                    onClick={() => handleCancelBooking(booking.id)}
-                    className="cancel-button"
-                  >
-                    Cancel Booking
-                  </button>
-                )}
-                
-                {booking.status === 'COMPLETED' && !booking.customerRating && (
-                  <button 
-                    onClick={() => openReviewModal(booking)}
-                    className="review-button"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M11 4H4a2 2 0 0 0-2 2v14l4-4h5a2 2 0 0 0 2-2V6a2 2 0 0 0-2-2z"></path>
-                      <path d="M19 7l-3 3-3-3"></path>
-                    </svg>
-                    Leave Review
-                  </button>
-                )}
-                
-                {(booking.status === 'CONFIRMED' || booking.status === 'COMPLETED') && !booking.hasDispute && (
-                  <button 
-                    onClick={() => handleReportDispute(booking.id)}
-                    className="dispute-button"
-                  >
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M12 9v4"></path>
-                      <path d="M12 17h.01"></path>
-                      <path d="M2 12h20"></path>
-                      <path d="M5 19h14l2-7H3l2 7z"></path>
-                    </svg>
-                    Report Issue
-                  </button>
-                )}
-
-                {booking.hasDispute && (
-                  <div className="dispute-status">
-                    <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-                      <path d="M12 9v4"></path>
-                      <path d="M12 17h.01"></path>
-                      <circle cx="12" cy="12" r="10"></circle>
-                    </svg>
-                    Dispute Reported - {booking.disputeStatus || 'Under Review'}
-                  </div>
-                )}
-              </div>
-
-              {booking.createdAt && (
-                <div className="booking-footer">
-                  <small>Booked on {new Date(booking.createdAt).toLocaleDateString('en-AU')}</small>
-                </div>
-              )}
-            </div>
-          ))
-        ) : (
-          <div className="no-bookings">
-            <div className="no-bookings-icon">📅</div>
-            <h3>No bookings found</h3>
-            <p>
-              {activeTab === 'all' 
-                ? "You haven't made any bookings yet. Browse our services to get started!"
-                : `No ${activeTab} bookings found.`
-              }
+        {/* Header */}
+        <div style={{
+          display: 'flex',
+          justifyContent: 'space-between',
+          alignItems: 'center',
+          marginBottom: '32px',
+          padding: '24px',
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          border: '1px solid #e5e7eb'
+        }}>
+          <div>
+            <h1 style={{
+              fontSize: '28px',
+              fontWeight: '700',
+              color: '#111827',
+              margin: '0 0 8px 0'
+            }}>
+              My Bookings
+            </h1>
+            <p style={{
+              color: '#6b7280',
+              margin: 0,
+              fontSize: '16px'
+            }}>
+              Manage and track your service bookings
             </p>
           </div>
-        )}
-      </div>
 
-      {/* Review Modal */}
-      {showReviewModal && selectedBooking && (
-        <ReviewModal
-          booking={selectedBooking}
-          onSubmit={handleSubmitReview}
-          onClose={closeReviewModal}
-        />
-      )}
-    </div>
+          <button
+              onClick={loadBookings}
+              style={{
+                display: 'flex',
+                alignItems: 'center',
+                gap: '8px',
+                padding: '12px 20px',
+                backgroundColor: '#f97316',
+                color: 'white',
+                border: 'none',
+                borderRadius: '8px',
+                fontSize: '14px',
+                fontWeight: '500',
+                cursor: 'pointer',
+                transition: 'all 0.2s'
+              }}
+              onMouseOver={(e) => e.target.style.backgroundColor = '#ea580c'}
+              onMouseOut={(e) => e.target.style.backgroundColor = '#f97316'}
+          >
+            <RefreshCw size={16} />
+            Refresh
+          </button>
+        </div>
+
+        {/* Tabs */}
+        <div style={{
+          display: 'flex',
+          backgroundColor: 'white',
+          borderRadius: '12px',
+          padding: '8px',
+          marginBottom: '24px',
+          boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+          border: '1px solid #e5e7eb',
+          gap: '4px'
+        }}>
+          {[
+            { key: 'all', label: 'All', count: counts.all },
+            { key: 'pending', label: 'Pending', count: counts.pending },
+            { key: 'confirmed', label: 'Confirmed', count: counts.confirmed },
+            { key: 'completed', label: 'Completed', count: counts.completed },
+            { key: 'cancelled', label: 'Cancelled', count: counts.cancelled }
+          ].map(tab => (
+              <button
+                  key={tab.key}
+                  onClick={() => setActiveTab(tab.key)}
+                  style={{
+                    flex: 1,
+                    padding: '12px 16px',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    backgroundColor: activeTab === tab.key ? '#f97316' : 'transparent',
+                    color: activeTab === tab.key ? 'white' : '#6b7280'
+                  }}
+              >
+                {tab.label} ({tab.count})
+              </button>
+          ))}
+        </div>
+
+        {/* Bookings List */}
+        {filteredBookings.length > 0 ? (
+            <div style={{
+              display: 'flex',
+              flexDirection: 'column',
+              gap: '16px'
+            }}>
+              {filteredBookings.map(booking => {
+                const statusConfig = getStatusConfig(booking.status);
+
+                return (
+                    <div
+                        key={booking.id}
+                        style={{
+                          backgroundColor: 'white',
+                          borderRadius: '16px',
+                          padding: '24px',
+                          boxShadow: '0 4px 6px rgba(0,0,0,0.05)',
+                          border: '1px solid #e5e7eb',
+                          transition: 'all 0.2s',
+                          position: 'relative',
+                          overflow: 'hidden',
+                          width: '100%'
+                        }}
+                        onMouseOver={(e) => {
+                          e.currentTarget.style.transform = 'translateY(-2px)';
+                          e.currentTarget.style.boxShadow = '0 8px 16px rgba(0,0,0,0.1)';
+                        }}
+                        onMouseOut={(e) => {
+                          e.currentTarget.style.transform = 'translateY(0)';
+                          e.currentTarget.style.boxShadow = '0 4px 6px rgba(0,0,0,0.05)';
+                        }}
+                    >
+                      {/* Top Row - Status Badges */}
+                      <div style={{
+                        display: 'flex',
+                        justifyContent: 'flex-end',
+                        marginBottom: '16px',
+                        gap: '8px',
+                        flexWrap: 'wrap'
+                      }}>
+                        <div style={{
+                          padding: '6px 12px',
+                          borderRadius: '20px',
+                          fontSize: '12px',
+                          fontWeight: '600',
+                          border: '1px solid',
+                          ...{
+                            backgroundColor: statusConfig.color.includes('yellow') ? '#fef3c7' :
+                                statusConfig.color.includes('green') ? '#d1fae5' :
+                                    statusConfig.color.includes('blue') ? '#dbeafe' :
+                                        statusConfig.color.includes('red') ? '#fee2e2' : '#f3f4f6',
+                            color: statusConfig.color.includes('yellow') ? '#92400e' :
+                                statusConfig.color.includes('green') ? '#065f46' :
+                                    statusConfig.color.includes('blue') ? '#1e40af' :
+                                        statusConfig.color.includes('red') ? '#991b1b' : '#374151',
+                            borderColor: statusConfig.color.includes('yellow') ? '#fbbf24' :
+                                statusConfig.color.includes('green') ? '#10b981' :
+                                    statusConfig.color.includes('blue') ? '#3b82f6' :
+                                        statusConfig.color.includes('red') ? '#ef4444' : '#9ca3af'
+                          }
+                        }}>
+                          {statusConfig.icon} {statusConfig.label}
+                        </div>
+
+                        {/* Dispute Warning */}
+                        {booking.hasDispute && (
+                            <div style={{
+                              padding: '6px 12px',
+                              borderRadius: '20px',
+                              fontSize: '12px',
+                              fontWeight: '600',
+                              backgroundColor: '#fef2f2',
+                              color: '#991b1b',
+                              border: '1px solid #fecaca',
+                              display: 'flex',
+                              alignItems: 'center',
+                              gap: '4px'
+                            }}>
+                              <AlertTriangle size={12} />
+                              Dispute: REPORTED
+                            </div>
+                        )}
+                      </div>
+
+                      {/* Main Content Layout */}
+                      <div style={{
+                        display: 'flex',
+                        gap: '24px',
+                        alignItems: 'flex-start'
+                      }}>
+                        {/* Left Side - Service Info & Contractor */}
+                        <div style={{ flex: 1 }}>
+                          {/* Service Title */}
+                          <div style={{ marginBottom: '16px' }}>
+                            <h3 style={{
+                              fontSize: '20px',
+                              fontWeight: '600',
+                              color: '#111827',
+                              margin: '0 0 4px 0'
+                            }}>
+                              {booking.serviceName}
+                            </h3>
+                            <p style={{
+                              color: '#6b7280',
+                              fontSize: '14px',
+                              margin: 0
+                            }}>
+                              Booking #{booking.id}
+                            </p>
+                          </div>
+
+                          {/* Contractor Info */}
+                          <div style={{
+                            display: 'flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            padding: '12px',
+                            backgroundColor: '#f9fafb',
+                            borderRadius: '8px'
+                          }}>
+                            <div style={{
+                              width: '40px',
+                              height: '40px',
+                              borderRadius: '50%',
+                              backgroundColor: '#f97316',
+                              display: 'flex',
+                              alignItems: 'center',
+                              justifyContent: 'center',
+                              color: 'white',
+                              fontWeight: '600'
+                            }}>
+                              {booking.contractorName.charAt(0).toUpperCase()}
+                            </div>
+                            <div>
+                              <p style={{
+                                fontWeight: '500',
+                                color: '#111827',
+                                margin: '0 0 2px 0'
+                              }}>
+                                {booking.contractorName}
+                              </p>
+                              <p style={{
+                                fontSize: '14px',
+                                color: '#6b7280',
+                                margin: 0
+                              }}>
+                                Service Provider
+                              </p>
+                            </div>
+                          </div>
+                        </div>
+
+                        {/* Middle - Booking Details */}
+                        <div style={{ flex: 1 }}>
+                          <div style={{
+                            display: 'grid',
+                            gridTemplateColumns: '1fr 1fr',
+                            gap: '16px'
+                          }}>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <Calendar size={16} style={{ color: '#6b7280' }} />
+                              <span style={{ fontSize: '14px', color: '#374151' }}>
+                          {new Date(booking.startTime).toLocaleDateString('en-AU', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                          })}
+                        </span>
+                            </div>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                              <Clock size={16} style={{ color: '#6b7280' }} />
+                              <span style={{ fontSize: '14px', color: '#374151' }}>
+                          {new Date(booking.startTime).toLocaleTimeString('en-AU', {
+                            hour: 'numeric',
+                            minute: '2-digit'
+                          })}
+                        </span>
+                            </div>
+                            {booking.location && (
+                                <div style={{
+                                  display: 'flex',
+                                  alignItems: 'center',
+                                  gap: '8px',
+                                  gridColumn: '1 / -1'
+                                }}>
+                                  <MapPin size={16} style={{ color: '#6b7280' }} />
+                                  <span style={{ fontSize: '14px', color: '#374151' }}>
+                            {booking.location}
+                          </span>
+                                </div>
+                            )}
+                          </div>
+                        </div>
+
+                        {/* Right Side - Price & Actions */}
+                        <div style={{
+                          display: 'flex',
+                          flexDirection: 'column',
+                          alignItems: 'flex-end',
+                          gap: '16px',
+                          minWidth: '200px'
+                        }}>
+                          {/* Price */}
+                          <div style={{ display: 'flex', alignItems: 'center', gap: '8px' }}>
+                           
+                            <span style={{
+                              fontSize: '24px',
+                              fontWeight: '700',
+                              color: '#059669'
+                            }}>
+                        ${booking.price}
+                      </span>
+                          </div>
+
+                          {/* Rating Display */}
+                          {booking.customerRating && (
+                              <div style={{
+                                display: 'flex',
+                                alignItems: 'center',
+                                gap: '8px',
+                                padding: '8px 12px',
+                                backgroundColor: '#fef3c7',
+                                borderRadius: '6px'
+                              }}>
+                                <span style={{ fontSize: '12px', color: '#92400e' }}>Your rating:</span>
+                                <div style={{ display: 'flex', gap: '2px' }}>
+                                  {[...Array(5)].map((_, i) => (
+                                      <Star
+                                          key={i}
+                                          size={14}
+                                          style={{
+                                            color: i < booking.customerRating ? '#fbbf24' : '#d1d5db',
+                                            fill: i < booking.customerRating ? '#fbbf24' : 'transparent'
+                                          }}
+                                      />
+                                  ))}
+                                </div>
+                              </div>
+                          )}
+
+                          {/* Action Buttons */}
+                          <div style={{
+                            display: 'flex',
+                            gap: '8px',
+                            flexWrap: 'wrap',
+                            justifyContent: 'flex-end'
+                          }}>
+                            {booking.hasDispute ? (
+                                <div style={{
+                                  fontSize: '12px',
+                                  color: '#991b1b',
+                                  fontWeight: '500'
+                                }}>
+                                  Dispute under review
+                                </div>
+                            ) : (
+                                <>
+                                  {booking.status === 'PENDING' && (
+                                      <button
+                                          onClick={() => handleCancelBooking(booking.id)}
+                                          style={{
+                                            padding: '8px 16px',
+                                            backgroundColor: '#fee2e2',
+                                            color: '#991b1b',
+                                            border: '1px solid #fecaca',
+                                            borderRadius: '6px',
+                                            fontSize: '14px',
+                                            fontWeight: '500',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s'
+                                          }}
+                                      >
+                                        Cancel Booking
+                                      </button>
+                                  )}
+
+                                  {booking.status === 'COMPLETED' && !booking.customerRating && (
+                                      <button
+                                          onClick={() => openReviewModal(booking)}
+                                          style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '6px',
+                                            padding: '8px 16px',
+                                            backgroundColor: '#dbeafe',
+                                            color: '#1e40af',
+                                            border: '1px solid #93c5fd',
+                                            borderRadius: '6px',
+                                            fontSize: '14px',
+                                            fontWeight: '500',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s'
+                                          }}
+                                      >
+                                        <Star size={14} />
+                                        Leave Review
+                                      </button>
+                                  )}
+
+                                  {(booking.status === 'CONFIRMED' || booking.status === 'COMPLETED') && (
+                                      <button
+                                          onClick={() => handleReportDispute(booking.id)}
+                                          style={{
+                                            display: 'flex',
+                                            alignItems: 'center',
+                                            gap: '6px',
+                                            padding: '8px 16px',
+                                            backgroundColor: '#fef3c7',
+                                            color: '#92400e',
+                                            border: '1px solid #fbbf24',
+                                            borderRadius: '6px',
+                                            fontSize: '14px',
+                                            fontWeight: '500',
+                                            cursor: 'pointer',
+                                            transition: 'all 0.2s'
+                                          }}
+                                      >
+                                        <AlertTriangle size={14} />
+                                        Report Issue
+                                      </button>
+                                  )}
+                                </>
+                            )}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                );
+              })}
+            </div>
+        ) : (
+            <div style={{
+              textAlign: 'center',
+              padding: '80px 20px',
+              backgroundColor: 'white',
+              borderRadius: '16px',
+              boxShadow: '0 1px 3px rgba(0,0,0,0.1)',
+              border: '1px solid #e5e7eb'
+            }}>
+              <div style={{
+                fontSize: '48px',
+                marginBottom: '16px'
+              }}>
+                <Calendar size={48} style={{ color: '#f97316' }} />
+              </div>
+              <h3 style={{
+                fontSize: '20px',
+                fontWeight: '600',
+                color: '#111827',
+                marginBottom: '8px'
+              }}>
+                No bookings found
+              </h3>
+              <p style={{
+                color: '#6b7280',
+                fontSize: '16px',
+                maxWidth: '400px',
+                margin: '0 auto'
+              }}>
+                {activeTab === 'all'
+                    ? "You haven't made any bookings yet. Browse our services to get started!"
+                    : `No ${activeTab} bookings found.`
+                }
+              </p>
+            </div>
+        )}
+
+        {/* Review Modal */}
+        {showReviewModal && selectedBooking && (
+            <ReviewModal
+                booking={selectedBooking}
+                onSubmit={handleSubmitReview}
+                onClose={closeReviewModal}
+            />
+        )}
+
+        {/* CSS for animation */}
+        <style jsx>{`
+          @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+          }
+        `}</style>
+      </div>
   );
 };
 
-// Review Modal Component
+// Enhanced Review Modal Component
 const ReviewModal = ({ booking, onSubmit, onClose }) => {
   const [rating, setRating] = useState(0);
   const [review, setReview] = useState('');
@@ -423,84 +741,247 @@ const ReviewModal = ({ booking, onSubmit, onClose }) => {
     }
   };
 
-  return (
-    <div className="modal-overlay" onClick={onClose}>
-      <div className="modal-content review-modal" onClick={(e) => e.stopPropagation()}>
-        <div className="modal-header">
-          <h3>Rate Your Experience</h3>
-          <button onClick={onClose} className="close-button">
-            <svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="2">
-              <line x1="18" y1="6" x2="6" y2="18"></line>
-              <line x1="6" y1="6" x2="18" y2="18"></line>
-            </svg>
-          </button>
-        </div>
+  const ratingLabels = {
+    1: 'Poor',
+    2: 'Fair',
+    3: 'Good',
+    4: 'Very Good',
+    5: 'Excellent'
+  };
 
-        <div className="modal-body">
-          <div className="service-info">
-            <h4>{booking.serviceName}</h4>
-            <p>with {booking.contractorName}</p>
+  return (
+      <div
+          style={{
+            position: 'fixed',
+            top: 0,
+            left: 0,
+            right: 0,
+            bottom: 0,
+            backgroundColor: 'rgba(0,0,0,0.5)',
+            display: 'flex',
+            alignItems: 'center',
+            justifyContent: 'center',
+            zIndex: 1000,
+            padding: '20px'
+          }}
+          onClick={onClose}
+      >
+        <div
+            style={{
+              backgroundColor: 'white',
+              borderRadius: '16px',
+              padding: '32px',
+              maxWidth: '500px',
+              width: '100%',
+              maxHeight: '90vh',
+              overflowY: 'auto',
+              boxShadow: '0 20px 25px rgba(0,0,0,0.2)'
+            }}
+            onClick={(e) => e.stopPropagation()}
+        >
+          <div style={{
+            display: 'flex',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            marginBottom: '24px'
+          }}>
+            <h3 style={{
+              fontSize: '24px',
+              fontWeight: '700',
+              color: '#111827',
+              margin: 0
+            }}>
+              Rate Your Experience
+            </h3>
+            <button
+                onClick={onClose}
+                style={{
+                  background: 'none',
+                  border: 'none',
+                  fontSize: '24px',
+                  color: '#6b7280',
+                  cursor: 'pointer',
+                  width: '32px',
+                  height: '32px',
+                  borderRadius: '50%',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'center'
+                }}
+            >
+              ×
+            </button>
+          </div>
+
+          <div style={{
+            padding: '20px',
+            backgroundColor: '#f9fafb',
+            borderRadius: '12px',
+            marginBottom: '24px'
+          }}>
+            <h4 style={{
+              fontSize: '18px',
+              fontWeight: '600',
+              color: '#111827',
+              margin: '0 0 4px 0'
+            }}>
+              {booking.serviceName}
+            </h4>
+            <p style={{
+              color: '#6b7280',
+              margin: 0
+            }}>
+              with {booking.contractorName}
+            </p>
           </div>
 
           <form onSubmit={handleSubmit}>
-            <div className="form-group">
-              <label>How was your experience?</label>
-              <div className="rating-input">
+            <div style={{ marginBottom: '24px' }}>
+              <label style={{
+                display: 'block',
+                fontSize: '16px',
+                fontWeight: '500',
+                color: '#111827',
+                marginBottom: '12px'
+              }}>
+                How was your experience?
+              </label>
+              <div style={{
+                display: 'flex',
+                gap: '8px',
+                marginBottom: '8px'
+              }}>
                 {[1, 2, 3, 4, 5].map((star) => (
-                  <button
-                    key={star}
-                    type="button"
-                    className={`star-button ${star <= (hoveredRating || rating) ? 'filled' : 'empty'}`}
-                    onClick={() => setRating(star)}
-                    onMouseEnter={() => setHoveredRating(star)}
-                    onMouseLeave={() => setHoveredRating(0)}
-                  >
-                    ★
-                  </button>
+                    <button
+                        key={star}
+                        type="button"
+                        style={{
+                          background: 'none',
+                          border: 'none',
+                          fontSize: '32px',
+                          cursor: 'pointer',
+                          color: star <= (hoveredRating || rating) ? '#fbbf24' : '#d1d5db',
+                          transition: 'color 0.2s'
+                        }}
+                        onClick={() => setRating(star)}
+                        onMouseEnter={() => setHoveredRating(star)}
+                        onMouseLeave={() => setHoveredRating(0)}
+                    >
+                      ★
+                    </button>
                 ))}
               </div>
-              <small className="rating-text">
-                {rating === 0 && 'Click to rate'}
-                {rating === 1 && 'Poor'}
-                {rating === 2 && 'Fair'}
-                {rating === 3 && 'Good'}
-                {rating === 4 && 'Very Good'}
-                {rating === 5 && 'Excellent'}
-              </small>
+              <p style={{
+                fontSize: '14px',
+                color: '#6b7280',
+                margin: 0
+              }}>
+                {rating === 0 ? 'Click to rate' : ratingLabels[rating]}
+              </p>
             </div>
 
-            <div className="form-group">
-              <label htmlFor="review">Tell us more about your experience (optional)</label>
+            <div style={{ marginBottom: '32px' }}>
+              <label
+                  htmlFor="review"
+                  style={{
+                    display: 'block',
+                    fontSize: '16px',
+                    fontWeight: '500',
+                    color: '#111827',
+                    marginBottom: '8px'
+                  }}
+              >
+                Tell us more about your experience (optional)
+              </label>
               <textarea
-                id="review"
-                value={review}
-                onChange={(e) => setReview(e.target.value)}
-                rows="4"
-                placeholder="Share your thoughts about the service..."
-                maxLength="500"
+                  id="review"
+                  value={review}
+                  onChange={(e) => setReview(e.target.value)}
+                  rows="4"
+                  placeholder="Share your thoughts about the service..."
+                  maxLength="500"
+                  style={{
+                    width: '100%',
+                    padding: '12px',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    resize: 'vertical',
+                    fontFamily: 'inherit'
+                  }}
               />
-              <small className="char-count">{review.length}/500</small>
+              <p style={{
+                fontSize: '12px',
+                color: '#6b7280',
+                textAlign: 'right',
+                margin: '4px 0 0 0'
+              }}>
+                {review.length}/500
+              </p>
             </div>
 
-            <div className="modal-actions">
-              <button type="button" onClick={onClose} className="cancel-button" disabled={loading}>
+            <div style={{
+              display: 'flex',
+              gap: '12px',
+              justifyContent: 'flex-end'
+            }}>
+              <button
+                  type="button"
+                  onClick={onClose}
+                  disabled={loading}
+                  style={{
+                    padding: '12px 24px',
+                    backgroundColor: 'white',
+                    color: '#6b7280',
+                    border: '1px solid #d1d5db',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: loading ? 'not-allowed' : 'pointer',
+                    opacity: loading ? 0.6 : 1,
+                    transition: 'all 0.2s'
+                  }}
+              >
                 Cancel
               </button>
-              <button type="submit" className="submit-button" disabled={loading || rating === 0}>
+              <button
+                  type="submit"
+                  disabled={loading || rating === 0}
+                  style={{
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px',
+                    padding: '12px 24px',
+                    backgroundColor: (loading || rating === 0) ? '#9ca3af' : '#3b82f6',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '14px',
+                    fontWeight: '500',
+                    cursor: (loading || rating === 0) ? 'not-allowed' : 'pointer',
+                    transition: 'all 0.2s'
+                  }}
+              >
                 {loading ? (
-                  <>
-                    <div className="loading-spinner"></div>
-                    Submitting...
-                  </>
+                    <>
+                      <div style={{
+                        width: '16px',
+                        height: '16px',
+                        border: '2px solid transparent',
+                        borderTop: '2px solid white',
+                        borderRadius: '50%',
+                        animation: 'spin 1s linear infinite'
+                      }}></div>
+                      Submitting...
+                    </>
                 ) : (
-                  'Submit Review'
+                    'Submit Review'
                 )}
               </button>
             </div>
           </form>
         </div>
       </div>
-    </div>
   );
 };
 

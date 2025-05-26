@@ -5,6 +5,7 @@ import com.example.messageservice.model.Message;
 import com.example.messageservice.service.MessageService;
 import com.fasterxml.jackson.databind.ObjectMapper;
 import com.fasterxml.jackson.datatype.jsr310.JavaTimeModule;
+import com.fasterxml.jackson.databind.DeserializationFeature;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Component;
@@ -32,6 +33,12 @@ public class ChatWebSocketHandler implements WebSocketHandler {
     private static ObjectMapper createObjectMapper() {
         ObjectMapper mapper = new ObjectMapper();
         mapper.registerModule(new JavaTimeModule());
+
+        // Configure to ignore unknown properties and handle null values gracefully
+        mapper.configure(DeserializationFeature.FAIL_ON_UNKNOWN_PROPERTIES, false);
+        mapper.configure(DeserializationFeature.FAIL_ON_NULL_FOR_PRIMITIVES, false);
+        mapper.configure(DeserializationFeature.READ_UNKNOWN_ENUM_VALUES_AS_NULL, true);
+
         return mapper;
     }
 
@@ -57,9 +64,17 @@ public class ChatWebSocketHandler implements WebSocketHandler {
                 String[] keyValue = param.split("=");
                 if (keyValue.length == 2) {
                     if ("conversationId".equals(keyValue[0])) {
-                        conversationId = Long.valueOf(keyValue[1]);
+                        try {
+                            conversationId = Long.valueOf(keyValue[1]);
+                        } catch (NumberFormatException e) {
+                            log.warn("Invalid conversationId: {}", keyValue[1]);
+                        }
                     } else if ("userId".equals(keyValue[0])) {
-                        userId = Long.valueOf(keyValue[1]);
+                        try {
+                            userId = Long.valueOf(keyValue[1]);
+                        } catch (NumberFormatException e) {
+                            log.warn("Invalid userId: {}", keyValue[1]);
+                        }
                     }
                 }
             }
@@ -83,7 +98,11 @@ public class ChatWebSocketHandler implements WebSocketHandler {
     public void handleTextMessage(WebSocketSession session, TextMessage message) throws Exception {
         try {
             WebSocketMessage wsMessage = objectMapper.readValue(message.getPayload(), WebSocketMessage.class);
-            wsMessage.setSendTime(LocalDateTime.now());
+
+            // Set sendTime to now if not provided or if provided time causes issues
+            if (wsMessage.getSendTime() == null) {
+                wsMessage.setSendTime(LocalDateTime.now());
+            }
 
             log.info("Received WebSocket message: type={}, conversationId={}, senderId={}",
                     wsMessage.getType(), wsMessage.getConversationId(), wsMessage.getSenderId());
@@ -137,7 +156,6 @@ public class ChatWebSocketHandler implements WebSocketHandler {
         }
     }
 
-
     private void handleAuthMessage(WebSocketSession session, WebSocketMessage wsMessage) {
         try {
             // For now, we'll accept any auth message and consider it valid
@@ -155,15 +173,6 @@ public class ChatWebSocketHandler implements WebSocketHandler {
             log.error("Error handling auth message: {}", e.getMessage());
             sendErrorMessage(session, "Authentication failed");
         }
-    }
-
-    private void handleConnectionMessage(WebSocketSession session, WebSocketMessage wsMessage) {
-        // Handle connection-related messages
-        sendToSession(session, WebSocketMessage.builder()
-                .type(WebSocketMessage.MessageType.SYSTEM)
-                .content("Connection established")
-                .sendTime(LocalDateTime.now())
-                .build());
     }
 
     private void handleHeartbeat(WebSocketSession session, WebSocketMessage wsMessage) {

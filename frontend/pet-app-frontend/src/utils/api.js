@@ -12,7 +12,7 @@ export const getAccessToken = () => {
 };
 
 export const getAuthToken = () => {
-  return getAccessToken(); // Alias for compatibility
+  return getAccessToken();
 };
 
 export const getRefreshToken = () => {
@@ -24,7 +24,7 @@ export const getCurrentUserEmail = () => {
 };
 
 export const getUserEmail = () => {
-  return getCurrentUserEmail(); // Alias for compatibility
+  return getCurrentUserEmail();
 };
 
 export const getCurrentUserId = () => {
@@ -50,11 +50,11 @@ export const getCurrentUser = () => {
 };
 
 export const getUserData = () => {
-  return getCurrentUser(); // Alias for compatibility
+  return getCurrentUser();
 };
 
 export const getUserProfile = () => {
-  return getCurrentUser(); // Alias for compatibility
+  return getCurrentUser();
 };
 
 export const setAuthData = (accessToken, refreshToken, userId, userName, userRole, userEmail) => {
@@ -101,14 +101,11 @@ const makeAuthenticatedRequest = async (url, options = {}) => {
   const response = await fetch(url, config);
 
   if (response.status === 401) {
-    // Token might be expired, try to refresh
     const refreshed = await refreshAccessToken();
     if (refreshed) {
-      // Retry the request with new token
       headers.Authorization = `Bearer ${getAccessToken()}`;
       return await fetch(url, { ...config, headers });
     } else {
-      // Refresh failed, redirect to login
       clearAuthData();
       window.location.href = '/login';
       throw new Error('Authentication failed');
@@ -134,7 +131,6 @@ export const login = async (email, password) => {
 
   const data = await response.json();
 
-  // Store auth data
   setAuthData(
     data.accessToken,
     data.refreshToken,
@@ -182,58 +178,13 @@ export const changePassword = async (email, oldPassword, newPassword) => {
   return await response.json();
 };
 
-export const forgotPassword = async (email) => {
-  const response = await fetch(`${USER_SERVICE_URL}/forgot-password`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ email }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    throw new Error(errorData?.message || 'Password reset request failed');
-  }
-
-  return await response.json();
-};
-
-export const resetPassword = async (token, newPassword) => {
-  const response = await fetch(`${USER_SERVICE_URL}/reset-password`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-    },
-    body: JSON.stringify({ token, newPassword }),
-  });
-
-  if (!response.ok) {
-    const errorData = await response.json().catch(() => null);
-    throw new Error(errorData?.message || 'Password reset failed');
-  }
-
-  return await response.json();
-};
-
-// Logout function
 export const logout = async () => {
   try {
-    // Optional: Call logout endpoint on server if it exists
-    // const response = await makeAuthenticatedRequest(`${USER_SERVICE_URL}/logout`, {
-    //   method: 'POST'
-    // });
-
-    // Clear all auth data
     clearAuthData();
-
-    // Redirect to login page
     window.location.href = '/login';
-
     return true;
   } catch (error) {
     console.error('Logout error:', error);
-    // Even if server logout fails, clear local data
     clearAuthData();
     window.location.href = '/login';
     return false;
@@ -270,73 +221,7 @@ export const refreshAccessToken = async () => {
   }
 };
 
-// Alias for compatibility
 export const refreshAuthToken = refreshAccessToken;
-
-// User Profile API calls
-export const fetchUserProfile = async (userId = null) => {
-  const targetUserId = userId || getCurrentUserId();
-
-  const response = await makeAuthenticatedRequest(`${USER_SERVICE_URL}/users/${targetUserId}`);
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch user profile: ${response.statusText}`);
-  }
-
-  return await response.json();
-};
-
-export const updateUserProfile = async (profileData) => {
-  const response = await makeAuthenticatedRequest(`${USER_SERVICE_URL}/users/profile`, {
-    method: 'PUT',
-    body: JSON.stringify(profileData)
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to update profile: ${response.statusText}`);
-  }
-
-  const updatedData = await response.json();
-
-  // Update local storage with new data
-  if (updatedData.name) localStorage.setItem('userName', updatedData.name);
-  if (updatedData.email) localStorage.setItem('userEmail', updatedData.email);
-
-  return updatedData;
-};
-
-export const uploadAvatar = async (avatarFile) => {
-  const formData = new FormData();
-  formData.append('avatar', avatarFile);
-
-  const response = await makeAuthenticatedRequest(`${USER_SERVICE_URL}/users/avatar`, {
-    method: 'POST',
-    headers: {}, // Don't set Content-Type for FormData
-    body: formData
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to upload avatar: ${response.statusText}`);
-  }
-
-  return await response.json();
-};
-
-export const deleteAccount = async (password) => {
-  const response = await makeAuthenticatedRequest(`${USER_SERVICE_URL}/users/account`, {
-    method: 'DELETE',
-    body: JSON.stringify({ password })
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to delete account: ${response.statusText}`);
-  }
-
-  // Clear auth data after successful deletion
-  clearAuthData();
-
-  return await response.json();
-};
 
 // Message Service API calls
 export const fetchConversations = async (page = 0, size = 20) => {
@@ -364,7 +249,7 @@ export const fetchMessages = async (conversationId, page = 0, size = 50) => {
   }
 
   const data = await response.json();
-  return data.messages || data; // Handle both paginated and direct array responses
+  return data.messages || data;
 };
 
 export const markMessagesAsRead = async (conversationId) => {
@@ -398,35 +283,22 @@ export const createConversation = async (bookingId, customerId, contractorId) =>
   return await response.json();
 };
 
-// WebSocket connection for real-time messaging
-export const createWebSocketConnection = (onMessage, onError, onClose) => {
-  const userId = getCurrentUserId();
-  const userRole = getUserRole();
+// WebSocket functions
+export const createWebSocketConnection = (
+  onMessage,
+  onError,
+  onClose,
+  conversationId = 1,
+  userId = null
+) => {
+  if (!userId) {
+    userId = getCurrentUserId();
+  }
 
-  // Simple WebSocket connection without query parameters
-  const wsUrl = `ws://localhost:8084/ws/chat`;
-
-  console.log('🔌 Connecting to WebSocket:', wsUrl);
+  const wsUrl = `ws://localhost:8084/ws/chat?conversationId=${conversationId}&userId=${userId}`;
+  console.log('🔌 Connecting to:', wsUrl);
 
   const websocket = new WebSocket(wsUrl);
-
-  websocket.onopen = (event) => {
-    console.log('✅ WebSocket connected successfully');
-
-    // Send authentication message
-    const authMessage = {
-      type: 'AUTH',
-      senderId: parseInt(userId),
-      senderType: userRole,
-      content: 'authenticate',
-      token: getAccessToken(),
-      sendTime: new Date().toISOString(),
-      senderName: getCurrentUserName()
-    };
-
-    console.log('🔐 Sending auth message:', authMessage);
-    websocket.send(JSON.stringify(authMessage));
-  };
 
   websocket.onmessage = (event) => {
     try {
@@ -434,24 +306,68 @@ export const createWebSocketConnection = (onMessage, onError, onClose) => {
       onMessage(message);
     } catch (error) {
       console.error('Error parsing WebSocket message:', error);
-      onError(error);
+      onMessage({ type: 'ERROR', content: 'Failed to parse message' });
     }
   };
 
-  websocket.onerror = (error) => {
-    console.error('WebSocket error:', error);
-    onError(error);
-  };
-
-  websocket.onclose = (event) => {
-    console.log('WebSocket connection closed:', event.code, event.reason);
-    onClose(event);
-  };
+  websocket.onerror = onError;
+  websocket.onclose = onClose;
 
   return websocket;
 };
 
-// WebSocket utility functions
+export const sendChatMessage = (websocket, conversationId, messageText) => {
+  if (!websocket || websocket.readyState !== WebSocket.OPEN) {
+    console.error('WebSocket not connected');
+    return false;
+  }
+
+  const currentUserId = getCurrentUserId();
+  const userRole = getUserRole();
+
+  const message = {
+    type: 'TEXT',
+    conversationId: conversationId,
+    senderId: parseInt(currentUserId),
+    senderType: userRole.toUpperCase(),
+    content: messageText
+  };
+
+  try {
+    websocket.send(JSON.stringify(message));
+    console.log('📤 Sent message:', message);
+    return true;
+  } catch (error) {
+    console.error('Error sending message:', error);
+    return false;
+  }
+};
+
+export const sendTypingIndicator = (websocket, conversationId) => {
+  if (!websocket || websocket.readyState !== WebSocket.OPEN) {
+    return false;
+  }
+
+  const currentUserId = getCurrentUserId();
+  const userRole = getUserRole();
+
+  const message = {
+    type: 'TYPING_INDICATOR',
+    conversationId: conversationId,
+    senderId: parseInt(currentUserId),
+    senderType: userRole.toUpperCase(),
+    content: 'typing...'
+  };
+
+  try {
+    websocket.send(JSON.stringify(message));
+    return true;
+  } catch (error) {
+    console.error('Error sending typing indicator:', error);
+    return false;
+  }
+};
+
 export const sendWebSocketMessage = (websocket, messageData) => {
   if (websocket && websocket.readyState === WebSocket.OPEN) {
     websocket.send(JSON.stringify(messageData));
@@ -466,91 +382,8 @@ export const closeWebSocketConnection = (websocket) => {
   }
 };
 
-export const getWebSocketReadyState = (websocket) => {
-  if (!websocket) return 'CLOSED';
-
-  switch (websocket.readyState) {
-    case WebSocket.CONNECTING: return 'CONNECTING';
-    case WebSocket.OPEN: return 'OPEN';
-    case WebSocket.CLOSING: return 'CLOSING';
-    case WebSocket.CLOSED: return 'CLOSED';
-    default: return 'UNKNOWN';
-  }
-};
-
 export const isWebSocketConnected = (websocket) => {
   return websocket && websocket.readyState === WebSocket.OPEN;
-};
-
-// Chat-specific WebSocket functions
-export const sendChatMessage = (websocket, conversationId, content, messageType = 'TEXT') => {
-  const message = {
-    type: messageType,
-    conversationId,
-    senderId: parseInt(getCurrentUserId()),
-    senderType: getUserRole(),
-    content,
-    sendTime: new Date().toISOString(),
-    senderName: getCurrentUserName()
-  };
-
-  return sendWebSocketMessage(websocket, message);
-};
-
-export const joinConversation = (websocket, conversationId) => {
-  if (!websocket || websocket.readyState !== WebSocket.OPEN) {
-    return false;
-  }
-
-  const message = {
-    type: 'CONNECTION',
-    conversationId,
-    senderId: parseInt(getCurrentUserId()),
-    senderType: getUserRole(),
-    content: 'join_conversation',
-    sendTime: new Date().toISOString()
-  };
-
-  return sendWebSocketMessage(websocket, message);
-};
-
-export const sendTypingIndicator = (websocket, conversationId) => {
-  const message = {
-    type: 'TYPING_INDICATOR',
-    conversationId,
-    senderId: parseInt(getCurrentUserId()),
-    senderType: getUserRole(),
-    content: '',
-    sendTime: new Date().toISOString()
-  };
-
-  return sendWebSocketMessage(websocket, message);
-};
-
-export const sendReadReceipt = (websocket, conversationId, messageId) => {
-  const message = {
-    type: 'READ_RECEIPT',
-    conversationId,
-    messageId,
-    senderId: parseInt(getCurrentUserId()),
-    senderType: getUserRole(),
-    content: '',
-    sendTime: new Date().toISOString()
-  };
-
-  return sendWebSocketMessage(websocket, message);
-};
-
-export const sendHeartbeat = (websocket) => {
-  const message = {
-    type: 'HEARTBEAT',
-    senderId: parseInt(getCurrentUserId()),
-    senderType: getUserRole(),
-    content: 'ping',
-    sendTime: new Date().toISOString()
-  };
-
-  return sendWebSocketMessage(websocket, message);
 };
 
 // Booking Service API calls
@@ -601,320 +434,331 @@ export const createBooking = async (bookingData) => {
   return await response.json();
 };
 
-export const acceptBooking = async (bookingId) => {
-  const response = await makeAuthenticatedRequest(`${BOOKING_SERVICE_URL}/bookings/${bookingId}/accept`, {
-    method: 'PUT'
-  });
+// Participant tracking functions
+export const getConversationParticipants = async (conversationId) => {
+  try {
+    const response = await makeAuthenticatedRequest(
+      `${MESSAGE_SERVICE_URL}/conversations/${conversationId}`
+    );
 
-  if (!response.ok) {
-    throw new Error(`Failed to accept booking: ${response.statusText}`);
-  }
-
-  return await response.json();
-};
-
-export const rejectBooking = async (bookingId, reason) => {
-  const response = await makeAuthenticatedRequest(`${BOOKING_SERVICE_URL}/bookings/${bookingId}/reject`, {
-    method: 'PUT',
-    body: JSON.stringify({ reason })
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to reject booking: ${response.statusText}`);
-  }
-
-  return await response.json();
-};
-
-export const cancelBooking = async (bookingId, reason) => {
-  const response = await makeAuthenticatedRequest(`${BOOKING_SERVICE_URL}/bookings/${bookingId}/cancel`, {
-    method: 'PUT',
-    body: JSON.stringify({ reason })
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to cancel booking: ${response.statusText}`);
-  }
-
-  return await response.json();
-};
-
-export const completeBooking = async (bookingId) => {
-  const response = await makeAuthenticatedRequest(`${BOOKING_SERVICE_URL}/bookings/${bookingId}/complete`, {
-    method: 'PUT'
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to complete booking: ${response.statusText}`);
-  }
-
-  return await response.json();
-};
-
-export const startService = async (bookingId) => {
-  const response = await makeAuthenticatedRequest(`${BOOKING_SERVICE_URL}/bookings/${bookingId}/start`, {
-    method: 'PUT'
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to start service: ${response.statusText}`);
-  }
-
-  return await response.json();
-};
-
-export const addBookingReview = async (bookingId, rating, review) => {
-  const response = await makeAuthenticatedRequest(`${BOOKING_SERVICE_URL}/bookings/${bookingId}/review`, {
-    method: 'POST',
-    body: JSON.stringify({ rating, review })
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to add review: ${response.statusText}`);
-  }
-
-  return await response.json();
-};
-
-export const reportNoShow = async (bookingId, customerNoShow) => {
-  const response = await makeAuthenticatedRequest(`${BOOKING_SERVICE_URL}/bookings/${bookingId}/no-show`, {
-    method: 'POST',
-    body: JSON.stringify({ customerNoShow })
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to report no-show: ${response.statusText}`);
-  }
-
-  return await response.json();
-};
-
-export const reportDispute = async (bookingId, reason) => {
-  const response = await makeAuthenticatedRequest(`${BOOKING_SERVICE_URL}/bookings/${bookingId}/dispute`, {
-    method: 'POST',
-    body: JSON.stringify({ reason })
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to report dispute: ${response.statusText}`);
-  }
-
-  return await response.json();
-};
-
-// Service Management API calls
-export const fetchServices = async (page = 0, size = 20) => {
-  const response = await fetch(`${SERVICE_MANAGEMENT_URL}/services?page=${page}&size=${size}`);
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch services: ${response.statusText}`);
-  }
-
-  return await response.json();
-};
-
-export const fetchServiceById = async (serviceId) => {
-  const response = await fetch(`${SERVICE_MANAGEMENT_URL}/services/${serviceId}`);
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch service: ${response.statusText}`);
-  }
-
-  return await response.json();
-};
-
-export const searchServices = async (searchTerm, filters = {}) => {
-  const queryParams = new URLSearchParams({
-    searchTerm,
-    ...filters
-  });
-
-  const response = await fetch(`${SERVICE_MANAGEMENT_URL}/services/search?${queryParams}`);
-
-  if (!response.ok) {
-    throw new Error(`Failed to search services: ${response.statusText}`);
-  }
-
-  return await response.json();
-};
-
-export const fetchServicesByCategory = async (category) => {
-  const response = await fetch(`${SERVICE_MANAGEMENT_URL}/services/category/${category}`);
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch services by category: ${response.statusText}`);
-  }
-
-  return await response.json();
-};
-
-export const fetchFeaturedServices = async () => {
-  const response = await fetch(`${SERVICE_MANAGEMENT_URL}/services/featured`);
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch featured services: ${response.statusText}`);
-  }
-
-  return await response.json();
-};
-
-export const fetchTopRatedServices = async (limit = 10, minReviews = 5) => {
-  const response = await fetch(`${SERVICE_MANAGEMENT_URL}/services/top-rated?limit=${limit}&minReviews=${minReviews}`);
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch top-rated services: ${response.statusText}`);
-  }
-
-  return await response.json();
-};
-
-export const fetchContractorServices = async (contractorId) => {
-  const response = await fetch(`${SERVICE_MANAGEMENT_URL}/services/contractor/${contractorId}`);
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch contractor services: ${response.statusText}`);
-  }
-
-  return await response.json();
-};
-
-export const createService = async (serviceData) => {
-  const response = await makeAuthenticatedRequest(`${SERVICE_MANAGEMENT_URL}/services`, {
-    method: 'POST',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Contractor-ID': getCurrentUserId(),
-      'X-Contractor-Name': getCurrentUserName(),
-      'X-Contractor-Email': getCurrentUserEmail()
-    },
-    body: JSON.stringify(serviceData)
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to create service: ${response.statusText}`);
-  }
-
-  return await response.json();
-};
-
-export const updateService = async (serviceId, serviceData) => {
-  const response = await makeAuthenticatedRequest(`${SERVICE_MANAGEMENT_URL}/services/${serviceId}`, {
-    method: 'PUT',
-    headers: {
-      'Content-Type': 'application/json',
-      'X-Contractor-ID': getCurrentUserId(),
-      'X-Contractor-Name': getCurrentUserName(),
-      'X-Contractor-Email': getCurrentUserEmail()
-    },
-    body: JSON.stringify(serviceData)
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to update service: ${response.statusText}`);
-  }
-
-  return await response.json();
-};
-
-export const deleteService = async (serviceId) => {
-  const response = await makeAuthenticatedRequest(`${SERVICE_MANAGEMENT_URL}/services/${serviceId}`, {
-    method: 'DELETE',
-    headers: {
-      'X-Contractor-ID': getCurrentUserId()
+    if (!response.ok) {
+      throw new Error(`Failed to get conversation: ${response.statusText}`);
     }
-  });
 
-  if (!response.ok) {
-    throw new Error(`Failed to delete service: ${response.statusText}`);
+    const conversation = await response.json();
+    const participants = [];
+
+    if (conversation.customerId) {
+      participants.push({
+        id: conversation.customerId,
+        name: `Customer ${conversation.customerId}`,
+        email: `customer${conversation.customerId}@example.com`,
+        role: 'CUSTOMER',
+        type: 'customer'
+      });
+    }
+
+    if (conversation.contractorId) {
+      participants.push({
+        id: conversation.contractorId,
+        name: `Contractor ${conversation.contractorId}`,
+        email: `contractor${conversation.contractorId}@example.com`,
+        role: 'CONTRACTOR',
+        type: 'contractor'
+      });
+    }
+
+    return {
+      conversation,
+      participants,
+      totalParticipants: participants.length
+    };
+
+  } catch (error) {
+    console.error('Error getting conversation participants:', error);
+    return {
+      conversation: null,
+      participants: [],
+      totalParticipants: 0
+    };
   }
 };
 
-export const approveService = async (serviceId) => {
-  const response = await makeAuthenticatedRequest(`${SERVICE_MANAGEMENT_URL}/services/${serviceId}/approve`, {
-    method: 'PUT'
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to approve service: ${response.statusText}`);
-  }
-
-  return await response.json();
+export const getOtherParticipant = (participants) => {
+  const currentUserId = parseInt(getCurrentUserId());
+  return participants.find(p => p.id !== currentUserId);
 };
 
-// Notification and Settings API calls
-export const fetchNotifications = async (page = 0, size = 20) => {
-  const response = await makeAuthenticatedRequest(
-    `${USER_SERVICE_URL}/notifications?page=${page}&size=${size}`
+export const formatParticipantsList = (participants) => {
+  if (!participants || participants.length === 0) {
+    return 'No participants';
+  }
+
+  const currentUserId = parseInt(getCurrentUserId());
+
+  return participants.map(participant => {
+    const isYou = participant.id === currentUserId;
+    const roleIcon = participant.role === 'CUSTOMER' ? '🐕' : '🔧';
+    const name = isYou ? 'You' : participant.name;
+
+    return `${roleIcon} ${name}`;
+  }).join(', ');
+};
+
+// Booking-based chat functions
+export const getConversationByBookingId = async (bookingId) => {
+  try {
+    const response = await makeAuthenticatedRequest(
+      `${MESSAGE_SERVICE_URL}/conversations/booking/${bookingId}`
+    );
+
+    if (response.status === 404) {
+      return null;
+    }
+
+    if (!response.ok) {
+      throw new Error(`Failed to get conversation: ${response.statusText}`);
+    }
+
+    return await response.json();
+  } catch (error) {
+    if (error.message.includes('404')) {
+      return null;
+    }
+    console.error('Error getting conversation by booking ID:', error);
+    throw error;
+  }
+};
+
+export const getOrCreateBookingConversation = async (bookingId) => {
+  try {
+    const existingConversation = await getConversationByBookingId(bookingId);
+
+    if (existingConversation) {
+      console.log('📞 Found existing conversation for booking:', bookingId);
+      return existingConversation;
+    }
+
+    const booking = await fetchBookingById(bookingId);
+
+    if (!booking) {
+      throw new Error('Booking not found');
+    }
+
+    if (booking.status !== 'CONFIRMED') {
+      throw new Error(`Cannot create chat for booking with status: ${booking.status}`);
+    }
+
+    const newConversation = await createConversation(
+      bookingId,
+      booking.customerId,
+      booking.contractorId
+    );
+
+    console.log('🆕 Created new conversation for booking:', bookingId);
+    return newConversation;
+
+  } catch (error) {
+    console.error('Error getting/creating booking conversation:', error);
+    throw error;
+  }
+};
+
+export const getChatEnabledBookings = async () => {
+  try {
+    const userRole = getUserRole();
+
+    let bookings;
+    if (userRole === 'CUSTOMER') {
+      const result = await fetchBookings(0, 100);
+      bookings = result.content || result;
+    } else {
+      const result = await fetchContractorBookings(0, 100);
+      bookings = result.content || result;
+    }
+
+    const confirmedBookings = bookings.filter(booking =>
+      booking.status === 'CONFIRMED' || booking.status === 'IN_PROGRESS' || booking.status === 'COMPLETED'
+    );
+
+    const bookingsWithChats = await Promise.all(
+      confirmedBookings.map(async (booking) => {
+        try {
+          const conversation = await getConversationByBookingId(booking.id);
+
+          return {
+            ...booking,
+            hasChat: !!conversation,
+            conversationId: conversation?.id || null,
+            unreadCount: conversation ? (
+              userRole === 'CUSTOMER'
+                ? conversation.customerUnreadCount || 0
+                : conversation.contractorUnreadCount || 0
+            ) : 0,
+            lastMessageTime: conversation?.lastMessageTime || null
+          };
+        } catch (error) {
+          console.warn(`Could not get conversation for booking ${booking.id}:`, error);
+          return {
+            ...booking,
+            hasChat: false,
+            conversationId: null,
+            unreadCount: 0,
+            lastMessageTime: null
+          };
+        }
+      })
+    );
+
+    return bookingsWithChats;
+  } catch (error) {
+    console.error('Error getting chat-enabled bookings:', error);
+    return [];
+  }
+};
+
+export const startBookingChat = async (bookingId) => {
+  try {
+    const conversation = await getOrCreateBookingConversation(bookingId);
+    const participants = await getConversationParticipants(conversation.id);
+
+    return {
+      conversationId: conversation.id,
+      bookingId: bookingId,
+      participants: participants.participants,
+      conversation: conversation
+    };
+  } catch (error) {
+    console.error('Error starting booking chat:', error);
+    throw error;
+  }
+};
+
+export const getBookingChatSummary = async (bookingId) => {
+  try {
+    const booking = await fetchBookingById(bookingId);
+    const conversation = await getConversationByBookingId(bookingId);
+
+    if (!conversation) {
+      return {
+        booking,
+        hasChat: false,
+        canCreateChat: booking.status === 'CONFIRMED'
+      };
+    }
+
+    const participants = await getConversationParticipants(conversation.id);
+    const recentMessages = await fetchMessages(conversation.id, 0, 1);
+
+    const userRole = getUserRole();
+    const otherParticipant = getOtherParticipant(participants.participants);
+
+    return {
+      booking,
+      conversation,
+      hasChat: true,
+      canCreateChat: false,
+      participants: participants.participants,
+      otherParticipant,
+      unreadCount: userRole === 'CUSTOMER'
+        ? conversation.customerUnreadCount || 0
+        : conversation.contractorUnreadCount || 0,
+      lastMessage: recentMessages && recentMessages.length > 0 ? recentMessages[0] : null,
+      lastActivity: conversation.lastMessageTime
+    };
+  } catch (error) {
+    console.error('Error getting booking chat summary:', error);
+    return null;
+  }
+};
+
+export const getBookingChatList = async () => {
+  try {
+    const chatEnabledBookings = await getChatEnabledBookings();
+
+    const chatList = await Promise.all(
+      chatEnabledBookings.map(async (booking) => {
+        const summary = await getBookingChatSummary(booking.id);
+        return summary;
+      })
+    );
+
+    const validChats = chatList
+      .filter(chat => chat !== null)
+      .sort((a, b) => {
+        const aTime = new Date(a.lastActivity || a.booking.createdAt || 0);
+        const bTime = new Date(b.lastActivity || b.booking.createdAt || 0);
+        return bTime - aTime;
+      });
+
+    return validChats;
+  } catch (error) {
+    console.error('Error getting booking chat list:', error);
+    return [];
+  }
+};
+
+export const formatBookingForChat = (booking) => {
+  const service = booking.service || {};
+  const startDate = new Date(booking.startTime || booking.scheduledDate);
+
+  return {
+    title: service.title || 'Pet Service',
+    description: service.description || booking.notes || 'No description',
+    date: startDate.toLocaleDateString(),
+    time: startDate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+    status: booking.status,
+    price: booking.totalAmount ? `$${booking.totalAmount}` : 'Price not set',
+    duration: service.duration ? `${service.duration} mins` : 'Duration not set',
+    location: booking.location || 'Location not set'
+  };
+};
+
+export const canAccessBookingChat = (booking) => {
+  const currentUserId = parseInt(getCurrentUserId());
+  const userRole = getUserRole();
+
+  const isParticipant = (
+    (userRole === 'CUSTOMER' && booking.customerId === currentUserId) ||
+    (userRole === 'CONTRACTOR' && booking.contractorId === currentUserId)
   );
 
-  if (!response.ok) {
-    throw new Error(`Failed to fetch notifications: ${response.statusText}`);
-  }
+  const allowsChat = ['CONFIRMED', 'IN_PROGRESS', 'COMPLETED'].includes(booking.status);
 
-  return await response.json();
+  return isParticipant && allowsChat;
 };
 
-export const markNotificationAsRead = async (notificationId) => {
-  const response = await makeAuthenticatedRequest(`${USER_SERVICE_URL}/notifications/${notificationId}/read`, {
-    method: 'PUT'
-  });
+export const createBookingChatConnection = (
+  bookingId,
+  conversationId,
+  onMessage,
+  onError,
+  onClose,
+  onParticipantUpdate
+) => {
+  const websocket = createWebSocketConnection(
+    (message) => {
+      const enhancedMessage = {
+        ...message,
+        bookingId: bookingId,
+        conversationId: conversationId
+      };
+      onMessage(enhancedMessage);
+    },
+    onError,
+    onClose,
+    conversationId
+  );
 
-  if (!response.ok) {
-    throw new Error(`Failed to mark notification as read: ${response.statusText}`);
-  }
+  websocket.bookingId = bookingId;
+  websocket.sendBookingMessage = (messageText) => {
+    return sendChatMessage(websocket, conversationId, messageText);
+  };
 
-  return await response.json();
+  return websocket;
 };
 
-export const markAllNotificationsAsRead = async () => {
-  const response = await makeAuthenticatedRequest(`${USER_SERVICE_URL}/notifications/mark-all-read`, {
-    method: 'PUT'
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to mark all notifications as read: ${response.statusText}`);
-  }
-
-  return await response.json();
-};
-
-export const updateNotificationSettings = async (settings) => {
-  const response = await makeAuthenticatedRequest(`${USER_SERVICE_URL}/users/notification-settings`, {
-    method: 'PUT',
-    body: JSON.stringify(settings)
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to update notification settings: ${response.statusText}`);
-  }
-
-  return await response.json();
-};
-
-export const fetchUserSettings = async () => {
-  const response = await makeAuthenticatedRequest(`${USER_SERVICE_URL}/users/settings`);
-
-  if (!response.ok) {
-    throw new Error(`Failed to fetch user settings: ${response.statusText}`);
-  }
-
-  return await response.json();
-};
-
-export const updateUserSettings = async (settings) => {
-  const response = await makeAuthenticatedRequest(`${USER_SERVICE_URL}/users/settings`, {
-    method: 'PUT',
-    body: JSON.stringify(settings)
-  });
-
-  if (!response.ok) {
-    throw new Error(`Failed to update user settings: ${response.statusText}`);
-  }
-
-  return await response.json();
-};
-
-// Health check utilities
+// Utility functions
 export const checkServiceHealth = async (serviceName, port) => {
   try {
     const response = await fetch(`http://localhost:${port}/api/test/health`);
@@ -955,7 +799,6 @@ export const checkAllServicesHealth = async () => {
   return healthChecks;
 };
 
-// Service startup verification
 export const verifyRequiredServices = async () => {
   const health = await checkAllServicesHealth();
   const downServices = health.filter(s => !s.healthy);
@@ -976,7 +819,6 @@ export const verifyRequiredServices = async () => {
   return health;
 };
 
-// WebSocket health check
 export const checkWebSocketHealth = async () => {
   try {
     const response = await fetch('http://localhost:8084/api/test/websocket-info');
@@ -992,7 +834,6 @@ export const checkWebSocketHealth = async () => {
   return false;
 };
 
-// Error handling utilities
 export const handleApiError = (error) => {
   console.error('API Error:', error);
 
@@ -1019,7 +860,6 @@ export const handleApiError = (error) => {
   return error.message || 'An unexpected error occurred.';
 };
 
-// Debug utilities
 export const debugAuthState = () => {
   const authState = {
     accessToken: getAccessToken(),
@@ -1035,46 +875,59 @@ export const debugAuthState = () => {
   return authState;
 };
 
-export const listAllExports = () => {
-  const exports = [
-    // Auth functions
-    'getAccessToken', 'getAuthToken', 'getRefreshToken',
-    'getCurrentUserId', 'getCurrentUserName', 'getCurrentUserEmail', 'getUserEmail', 'getUserRole',
-    'getCurrentUser', 'getUserData', 'getUserProfile',
-    'setAuthData', 'clearAuthData', 'isAuthenticated',
-    'login', 'signup', 'logout', 'changePassword', 'forgotPassword', 'resetPassword',
-    'refreshAccessToken', 'refreshAuthToken',
+export default {
+  // Auth
+  login,
+  signup,
+  logout,
+  refreshAccessToken,
+  refreshAuthToken,
+  getAccessToken,
+  getCurrentUserId,
+  getCurrentUserName,
+  getUserRole,
+  getCurrentUserEmail,
+  getUserEmail,
+  isAuthenticated,
 
-    // User Profile functions
-    'fetchUserProfile', 'updateUserProfile', 'uploadAvatar', 'deleteAccount',
+  // WebSocket
+  createWebSocketConnection,
+  sendChatMessage,
+  sendTypingIndicator,
 
-    // Message Service functions
-    'fetchConversations', 'fetchMessages', 'markMessagesAsRead', 'createConversation',
+  // Messaging
+  fetchConversations,
+  fetchMessages,
+  markMessagesAsRead,
+  createConversation,
 
-    // WebSocket functions
-    'createWebSocketConnection', 'sendWebSocketMessage', 'closeWebSocketConnection',
-    'getWebSocketReadyState', 'isWebSocketConnected', 'sendChatMessage', 'joinConversation',
-    'sendTypingIndicator', 'sendReadReceipt', 'sendHeartbeat',
+  // Participants
+  getConversationParticipants,
+  getOtherParticipant,
+  formatParticipantsList,
 
-    // Booking Service functions
-    'fetchBookings', 'fetchContractorBookings', 'fetchBookingById', 'createBooking',
-    'acceptBooking', 'rejectBooking', 'cancelBooking', 'completeBooking', 'startService',
-    'addBookingReview', 'reportNoShow', 'reportDispute',
+  // Booking Chat
+  getOrCreateBookingConversation,
+  getConversationByBookingId,
+  getChatEnabledBookings,
+  startBookingChat,
+  getBookingChatSummary,
+  getBookingChatList,
+  formatBookingForChat,
+  canAccessBookingChat,
+  createBookingChatConnection,
 
-    // Service Management functions
-    'fetchServices', 'fetchServiceById', 'searchServices', 'fetchServicesByCategory',
-    'fetchFeaturedServices', 'fetchTopRatedServices', 'fetchContractorServices',
-    'createService', 'updateService', 'deleteService', 'approveService',
+  // Bookings
+  fetchBookings,
+  fetchContractorBookings,
+  fetchBookingById,
+  createBooking,
 
-    // Notification and Settings functions
-    'fetchNotifications', 'markNotificationAsRead', 'markAllNotificationsAsRead',
-    'updateNotificationSettings', 'fetchUserSettings', 'updateUserSettings',
-
-    // Utility functions
-    'checkServiceHealth', 'checkAllServicesHealth', 'verifyRequiredServices', 'checkWebSocketHealth',
-    'handleApiError', 'debugAuthState', 'listAllExports'
-  ];
-
-  console.log('📋 Available API exports:', exports);
-  return exports;
+  // Utilities
+  checkServiceHealth,
+  checkAllServicesHealth,
+  verifyRequiredServices,
+  checkWebSocketHealth,
+  handleApiError,
+  debugAuthState
 };
