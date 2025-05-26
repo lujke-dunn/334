@@ -1,0 +1,366 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Message Service WebSocket Test</title>
+    <style>
+        body {
+            font-family: Arial, sans-serif;
+            max-width: 800px;
+            margin: 0 auto;
+            padding: 20px;
+            background-color: #f5f5f5;
+        }
+        .container {
+            background: white;
+            padding: 20px;
+            border-radius: 8px;
+            box-shadow: 0 2px 4px rgba(0,0,0,0.1);
+        }
+        .connection-status {
+            padding: 10px;
+            border-radius: 4px;
+            margin-bottom: 20px;
+            font-weight: bold;
+        }
+        .connected { background-color: #d4edda; color: #155724; }
+        .disconnected { background-color: #f8d7da; color: #721c24; }
+        .messages {
+            height: 300px;
+            overflow-y: auto;
+            border: 1px solid #ddd;
+            padding: 10px;
+            margin-bottom: 20px;
+            background-color: #fafafa;
+        }
+        .message {
+            margin-bottom: 10px;
+            padding: 8px;
+            border-radius: 4px;
+        }
+        .message.sent {
+            background-color: #007bff;
+            color: white;
+            text-align: right;
+        }
+        .message.received {
+            background-color: #e9ecef;
+            color: #333;
+        }
+        .message.system {
+            background-color: #fff3cd;
+            color: #856404;
+            text-align: center;
+            font-style: italic;
+        }
+        .controls {
+            display: grid;
+            gap: 10px;
+        }
+        .form-group {
+            display: flex;
+            gap: 10px;
+            align-items: center;
+        }
+        .form-group label {
+            min-width: 120px;
+        }
+        .form-group input, .form-group select {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+        }
+        .message-input {
+            display: flex;
+            gap: 10px;
+        }
+        .message-input textarea {
+            flex: 1;
+            padding: 8px;
+            border: 1px solid #ddd;
+            border-radius: 4px;
+            resize: vertical;
+            min-height: 60px;
+        }
+        button {
+            padding: 8px 16px;
+            border: none;
+            border-radius: 4px;
+            cursor: pointer;
+            font-weight: bold;
+        }
+        .btn-primary {
+            background-color: #007bff;
+            color: white;
+        }
+        .btn-success {
+            background-color: #28a745;
+            color: white;
+        }
+        .btn-danger {
+            background-color: #dc3545;
+            color: white;
+        }
+        button:hover {
+            opacity: 0.9;
+        }
+        button:disabled {
+            opacity: 0.6;
+            cursor: not-allowed;
+        }
+    </style>
+</head>
+<body>
+<div class="container">
+    <h1>Message Service WebSocket Test</h1>
+
+    <div id="connectionStatus" class="connection-status disconnected">
+        Disconnected
+    </div>
+
+    <div class="controls">
+        <div class="form-group">
+            <label>Connection Type:</label>
+            <select id="connectionType">
+                <option value="ws://localhost:8084/ws/chat">Native WebSocket</option>
+                <option value="sockjs">SockJS (with fallback)</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <label>Server URL:</label>
+            <input type="text" id="serverUrl" value="ws://localhost:8084/ws/chat" />
+        </div>
+
+        <div class="form-group">
+            <label>Conversation ID:</label>
+            <input type="number" id="conversationId" value="1" />
+        </div>
+
+        <div class="form-group">
+            <label>User ID:</label>
+            <input type="number" id="userId" value="1" />
+        </div>
+
+        <div class="form-group">
+            <label>User Type:</label>
+            <select id="userType">
+                <option value="CUSTOMER">Customer</option>
+                <option value="CONTRACTOR">Contractor</option>
+            </select>
+        </div>
+
+        <div class="form-group">
+            <button id="connectBtn" class="btn-primary" onclick="connect()">Connect</button>
+            <button id="disconnectBtn" class="btn-danger" onclick="disconnect()" disabled>Disconnect</button>
+            <button class="btn-success" onclick="testConnection()">Test Health</button>
+            <button class="btn-primary" onclick="getWebSocketInfo()">WS Info</button>
+        </div>
+    </div>
+
+    <div class="messages" id="messages"></div>
+
+    <div class="message-input">
+        <textarea id="messageText" placeholder="Type your message here..."></textarea>
+        <button id="sendBtn" class="btn-primary" onclick="sendMessage()" disabled>Send</button>
+    </div>
+</div>
+
+<script>
+    let websocket = null;
+    let isConnected = false;
+
+    function updateConnectionStatus(connected) {
+        isConnected = connected;
+        const statusEl = document.getElementById('connectionStatus');
+        const connectBtn = document.getElementById('connectBtn');
+        const disconnectBtn = document.getElementById('disconnectBtn');
+        const sendBtn = document.getElementById('sendBtn');
+
+        if (connected) {
+            statusEl.textContent = 'Connected';
+            statusEl.className = 'connection-status connected';
+            connectBtn.disabled = true;
+            disconnectBtn.disabled = false;
+            sendBtn.disabled = false;
+        } else {
+            statusEl.textContent = 'Disconnected';
+            statusEl.className = 'connection-status disconnected';
+            connectBtn.disabled = false;
+            disconnectBtn.disabled = true;
+            sendBtn.disabled = true;
+        }
+    }
+
+    function addMessage(content, type = 'received') {
+        const messagesEl = document.getElementById('messages');
+        const messageEl = document.createElement('div');
+        messageEl.className = `message ${type}`;
+        messageEl.textContent = `[${new Date().toLocaleTimeString()}] ${content}`;
+        messagesEl.appendChild(messageEl);
+        messagesEl.scrollTop = messagesEl.scrollHeight;
+    }
+
+    function connect() {
+        const connectionType = document.getElementById('connectionType').value;
+        const conversationId = document.getElementById('conversationId').value;
+        const userId = document.getElementById('userId').value;
+
+        let url;
+
+        if (connectionType === 'sockjs') {
+            // For SockJS, we'll use a simple fallback to WebSocket for now
+            // In production, you'd use the SockJS client library
+            url = `ws://localhost:8084/ws/chat-sockjs/websocket?conversationId=${conversationId}&userId=${userId}`;
+            addMessage(`🔌 Attempting SockJS connection...`, 'system');
+        } else {
+            // Native WebSocket
+            url = `${connectionType}?conversationId=${conversationId}&userId=${userId}`;
+            addMessage(`🔌 Attempting native WebSocket connection...`, 'system');
+        }
+
+        // Update server URL field
+        document.getElementById('serverUrl').value = url;
+
+        addMessage(`Connecting to: ${url}`, 'system');
+
+        try {
+            websocket = new WebSocket(url);
+
+            websocket.onopen = function(event) {
+                console.log('WebSocket connected to:', url);
+                updateConnectionStatus(true);
+                addMessage('✅ Connected to WebSocket successfully!', 'system');
+            };
+
+            websocket.onmessage = function(event) {
+                console.log('Message received:', event.data);
+                try {
+                    const message = JSON.parse(event.data);
+                    if (message.type === 'SYSTEM') {
+                        addMessage(`🔔 ${message.content}`, 'system');
+                    } else if (message.type === 'ERROR') {
+                        addMessage(`❌ Error: ${message.content}`, 'system');
+                    } else {
+                        addMessage(`📨 ${message.senderType} (${message.senderId}): ${message.content}`, 'received');
+                    }
+                } catch (e) {
+                    addMessage(`📤 Raw: ${event.data}`, 'received');
+                }
+            };
+
+            websocket.onclose = function(event) {
+                console.log('WebSocket disconnected. Code:', event.code, 'Reason:', event.reason);
+                updateConnectionStatus(false);
+                addMessage(`❌ Disconnected (Code: ${event.code})`, 'system');
+
+                if (event.code === 1006) {
+                    addMessage('💡 Connection failed - server may not be running or WebSocket endpoint not available', 'system');
+                    addMessage('💡 Try: curl http://localhost:8084/api/test/health', 'system');
+                }
+            };
+
+            websocket.onerror = function(error) {
+                console.error('WebSocket error:', error);
+                addMessage(`❌ WebSocket connection failed.`, 'system');
+                addMessage(`💡 Make sure the server is running: ./mvnw spring-boot:run`, 'system');
+                addMessage(`💡 Check health: curl http://localhost:8084/api/test/health`, 'system');
+            };
+
+        } catch (error) {
+            console.error('Connection error:', error);
+            addMessage(`❌ Connection failed: ${error.message}`, 'system');
+        }
+    }
+
+    function disconnect() {
+        if (websocket) {
+            websocket.close();
+        }
+    }
+
+    function sendMessage() {
+        if (!isConnected || !websocket) {
+            addMessage('Not connected to WebSocket', 'system');
+            return;
+        }
+
+        const messageText = document.getElementById('messageText').value.trim();
+        if (!messageText) {
+            addMessage('Please enter a message', 'system');
+            return;
+        }
+
+        const conversationId = parseInt(document.getElementById('conversationId').value);
+        const userId = parseInt(document.getElementById('userId').value);
+        const userType = document.getElementById('userType').value;
+
+        const message = {
+            type: 'TEXT',
+            conversationId: conversationId,
+            senderId: userId,
+            senderType: userType,
+            content: messageText
+        };
+
+        try {
+            websocket.send(JSON.stringify(message));
+            addMessage(`You: ${messageText}`, 'sent');
+            document.getElementById('messageText').value = '';
+        } catch (error) {
+            console.error('Send error:', error);
+            addMessage(`Failed to send: ${error.message}`, 'system');
+        }
+    }
+
+    async function testConnection() {
+        try {
+            const response = await fetch('http://localhost:8084/api/test/health');
+            const data = await response.json();
+            addMessage(`🏥 Health check: ${data.status} - DB: ${data.database}`, 'system');
+        } catch (error) {
+            addMessage(`❌ Health check failed: ${error.message}`, 'system');
+        }
+    }
+
+    async function getWebSocketInfo() {
+        try {
+            const response = await fetch('http://localhost:8084/api/test/websocket-info');
+            const data = await response.json();
+            addMessage(`🔌 Available WebSocket endpoints:`, 'system');
+            data.availableEndpoints.forEach(endpoint => {
+                addMessage(`   - ${endpoint}`, 'system');
+            });
+            addMessage(`💡 Use "Native WebSocket" option first`, 'system');
+        } catch (error) {
+            addMessage(`❌ Failed to get WebSocket info: ${error.message}`, 'system');
+            addMessage(`💡 Server may not be running. Try: ./mvnw spring-boot:run`, 'system');
+        }
+    }
+
+    // Allow sending messages with Enter key
+    document.getElementById('messageText').addEventListener('keypress', function(e) {
+        if (e.key === 'Enter' && !e.shiftKey) {
+            e.preventDefault();
+            sendMessage();
+        }
+    });
+
+    // Update server URL when connection type changes
+    document.getElementById('connectionType').addEventListener('change', function(e) {
+        if (e.target.value === 'sockjs') {
+            document.getElementById('serverUrl').value = 'SockJS endpoint: /ws/chat-sockjs';
+        } else {
+            document.getElementById('serverUrl').value = e.target.value;
+        }
+    });
+
+    // Test connection on page load
+    window.onload = function() {
+        testConnection();
+    };
+</script>
+</body>
+</html>

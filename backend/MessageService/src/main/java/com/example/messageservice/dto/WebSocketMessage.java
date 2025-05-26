@@ -26,6 +26,7 @@ public class WebSocketMessage {
     private LocalDateTime sendTime;
 
     private String senderName;
+    private String token;
 
     public enum MessageType {
         TEXT,
@@ -34,7 +35,10 @@ public class WebSocketMessage {
         SYSTEM,
         TYPING_INDICATOR,
         READ_RECEIPT,
-        ERROR
+        ERROR,
+        AUTH,
+        CONNECTION,
+        HEARTBEAT
     }
 
 }

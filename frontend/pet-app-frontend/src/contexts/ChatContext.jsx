@@ -1,18 +1,18 @@
 import React, { createContext, useContext, useReducer, useEffect, useRef } from 'react';
-import { 
-  fetchConversations, 
-  fetchMessages, 
+import {
+  fetchConversations,
+  fetchMessages,
   markMessagesAsRead,
   createWebSocketConnection,
   getCurrentUserId,
   getCurrentUserName,
-  getUserRole 
+  getUserRole
 } from '../utils/api';
 
 // Create the context
 const ChatContext = createContext();
 
-// Chat actions - expanded for WebSocket integration
+// Chat actions
 const CHAT_ACTIONS = {
   SET_CONVERSATIONS: 'SET_CONVERSATIONS',
   SELECT_CONVERSATION: 'SELECT_CONVERSATION',
@@ -37,11 +37,11 @@ const initialState = {
   isLoading: false,
   error: null,
   websocketConnected: false,
-  typingStatus: {}, // { conversationId: { userId: isTyping } }
-  messagesCache: {}, // { conversationId: messages[] }
+  typingStatus: {},
+  messagesCache: {},
 };
 
-// Reducer function - enhanced for WebSocket integration
+// Reducer function
 const chatReducer = (state, action) => {
   switch (action.type) {
     case CHAT_ACTIONS.SET_LOADING:
@@ -58,12 +58,12 @@ const chatReducer = (state, action) => {
 
     case CHAT_ACTIONS.SET_CONVERSATIONS:
       const conversations = action.payload;
+      const userRole = getUserRole();
+      const unreadField = userRole === 'CUSTOMER' ? 'customerUnreadCount' : 'contractorUnreadCount';
       const totalUnread = conversations.reduce((total, conv) => {
-        const userRole = getUserRole();
-        const unreadField = userRole === 'CUSTOMER' ? 'customerUnreadCount' : 'contractorUnreadCount';
         return total + (conv[unreadField] || 0);
       }, 0);
-      
+
       return {
         ...state,
         conversations,
@@ -87,7 +87,7 @@ const chatReducer = (state, action) => {
 
     case CHAT_ACTIONS.ADD_MESSAGE:
       const { conversationId, message } = action.payload;
-      
+
       // Update messages cache
       const currentMessages = state.messagesCache[conversationId] || [];
       const updatedMessagesCache = {
@@ -96,16 +96,20 @@ const chatReducer = (state, action) => {
       };
 
       // Update conversations list
+      const currentUserId = parseInt(getCurrentUserId());
+      const currentUserRole = getUserRole();
+      const unreadFieldForAdd = currentUserRole === 'CUSTOMER' ? 'customerUnreadCount' : 'contractorUnreadCount';
+
       const updatedConversations = state.conversations.map(chat => {
         if (chat.id === conversationId) {
+          const isOwnMessage = message.senderId === currentUserId;
           return {
             ...chat,
             lastMessage: message.content,
             lastMessageTime: message.createdAt,
-            // Don't increment unread count for messages from current user
-            ...(message.senderId !== getCurrentUserId() && {
-              [getUserRole() === 'CUSTOMER' ? 'customerUnreadCount' : 'contractorUnreadCount']: 
-                (chat[getUserRole() === 'CUSTOMER' ? 'customerUnreadCount' : 'contractorUnreadCount'] || 0) + 1
+            // Don't increment unread count for own messages
+            ...((!isOwnMessage) && {
+              [unreadFieldForAdd]: (chat[unreadFieldForAdd] || 0) + 1
             })
           };
         }
@@ -121,24 +125,26 @@ const chatReducer = (state, action) => {
           }
         : state.selectedConversation;
 
+      const isOwnMessage = message.senderId === currentUserId;
       return {
         ...state,
         conversations: updatedConversations,
         selectedConversation: updatedSelectedConversation,
         messagesCache: updatedMessagesCache,
-        totalUnreadCount: state.totalUnreadCount + (message.senderId !== getCurrentUserId() ? 1 : 0)
+        totalUnreadCount: state.totalUnreadCount + (isOwnMessage ? 0 : 1)
       };
 
     case CHAT_ACTIONS.MARK_AS_READ:
+      const currentUserRoleForRead = getUserRole();
+      const unreadFieldForRead = currentUserRoleForRead === 'CUSTOMER' ? 'customerUnreadCount' : 'contractorUnreadCount';
       const conversationToMarkRead = state.conversations.find(chat => chat.id === action.payload);
-      const unreadField = getUserRole() === 'CUSTOMER' ? 'customerUnreadCount' : 'contractorUnreadCount';
-      const unreadCount = conversationToMarkRead?.[unreadField] || 0;
+      const unreadCount = conversationToMarkRead?.[unreadFieldForRead] || 0;
 
       return {
         ...state,
         conversations: state.conversations.map(chat =>
           chat.id === action.payload
-            ? { ...chat, [unreadField]: 0 }
+            ? { ...chat, [unreadFieldForRead]: 0 }
             : chat
         ),
         totalUnreadCount: Math.max(0, state.totalUnreadCount - unreadCount)
@@ -159,7 +165,7 @@ const chatReducer = (state, action) => {
     case CHAT_ACTIONS.UPDATE_MESSAGE_STATUS:
       const { messageId, status } = action.payload;
       const updatedCache = { ...state.messagesCache };
-      
+
       Object.keys(updatedCache).forEach(convId => {
         updatedCache[convId] = updatedCache[convId].map(msg =>
           msg.id === messageId ? { ...msg, status } : msg
@@ -178,12 +184,29 @@ export const ChatProvider = ({ children }) => {
   const [state, dispatch] = useReducer(chatReducer, initialState);
   const websocketRef = useRef(null);
   const typingTimeoutRef = useRef({});
+  const actionsRef = useRef(null);
 
   // WebSocket message handler
   const handleWebSocketMessage = (wsMessage) => {
+    console.log('Received WebSocket message:', wsMessage);
     const { type, conversationId, senderId, content, messageId } = wsMessage;
 
     switch (type) {
+      case 'AUTH':
+        console.log('Authentication response:', content);
+        if (content === 'Authentication successful') {
+          console.log('✅ WebSocket authenticated successfully');
+        }
+        break;
+
+      case 'CONNECTION':
+        console.log('Connection message:', content);
+        break;
+
+      case 'HEARTBEAT':
+        // Handle heartbeat response - no action needed
+        break;
+
       case 'TEXT':
       case 'IMAGE':
       case 'FILE':
@@ -200,28 +223,36 @@ export const ChatProvider = ({ children }) => {
           attachmentData: wsMessage.attachmentData,
           attachmentFilename: wsMessage.attachmentFilename
         };
-        
-        actions.addMessage(conversationId, newMessage);
+
+        if (actionsRef.current) {
+          actionsRef.current.addMessage(conversationId, newMessage);
+        }
         break;
 
       case 'TYPING_INDICATOR':
-        actions.setTypingStatus(conversationId, senderId, true);
-        
-        // Clear previous timeout for this user
-        const timeoutKey = `${conversationId}-${senderId}`;
-        if (typingTimeoutRef.current[timeoutKey]) {
-          clearTimeout(typingTimeoutRef.current[timeoutKey]);
+        if (actionsRef.current) {
+          actionsRef.current.setTypingStatus(conversationId, senderId, true);
+
+          // Clear previous timeout for this user
+          const timeoutKey = `${conversationId}-${senderId}`;
+          if (typingTimeoutRef.current[timeoutKey]) {
+            clearTimeout(typingTimeoutRef.current[timeoutKey]);
+          }
+
+          // Set new timeout to clear typing status
+          typingTimeoutRef.current[timeoutKey] = setTimeout(() => {
+            if (actionsRef.current) {
+              actionsRef.current.setTypingStatus(conversationId, senderId, false);
+            }
+            delete typingTimeoutRef.current[timeoutKey];
+          }, 3000);
         }
-        
-        // Set new timeout to clear typing status
-        typingTimeoutRef.current[timeoutKey] = setTimeout(() => {
-          actions.setTypingStatus(conversationId, senderId, false);
-          delete typingTimeoutRef.current[timeoutKey];
-        }, 3000);
         break;
 
       case 'READ_RECEIPT':
-        actions.updateMessageStatus(messageId, 'read');
+        if (actionsRef.current) {
+          actionsRef.current.updateMessageStatus(messageId, 'read');
+        }
         break;
 
       case 'ERROR':
@@ -244,7 +275,7 @@ export const ChatProvider = ({ children }) => {
   const handleWebSocketClose = (event) => {
     console.log('WebSocket closed:', event);
     dispatch({ type: CHAT_ACTIONS.WEBSOCKET_DISCONNECTED });
-    
+
     // Attempt to reconnect after 3 seconds
     setTimeout(() => {
       if (websocketRef.current?.readyState === WebSocket.CLOSED) {
@@ -265,7 +296,7 @@ export const ChatProvider = ({ children }) => {
         handleWebSocketError,
         handleWebSocketClose
       );
-      
+
       websocketRef.current.onopen = () => {
         dispatch({ type: CHAT_ACTIONS.WEBSOCKET_CONNECTED });
       };
@@ -292,35 +323,33 @@ export const ChatProvider = ({ children }) => {
 
     // Load messages for a conversation
     loadConversationMessages: async (conversationId, page = 0, size = 50) => {
-      dispatch({ type: CHAT_ACTIONS.SET_LOADING, payload: true });
       try {
         const response = await fetchMessages(conversationId, page, size);
-        dispatch({ 
-          type: CHAT_ACTIONS.LOAD_CONVERSATION_MESSAGES, 
-          payload: { 
-            conversationId, 
-            messages: response.content || response 
-          } 
+        const messages = Array.isArray(response) ? response : (response.messages || response.content || []);
+        dispatch({
+          type: CHAT_ACTIONS.LOAD_CONVERSATION_MESSAGES,
+          payload: {
+            conversationId,
+            messages
+          }
         });
       } catch (error) {
         dispatch({ type: CHAT_ACTIONS.SET_ERROR, payload: error.message });
-      } finally {
-        dispatch({ type: CHAT_ACTIONS.SET_LOADING, payload: false });
       }
     },
 
     selectConversation: async (conversation) => {
       dispatch({ type: CHAT_ACTIONS.SELECT_CONVERSATION, payload: conversation });
-      
+
       // Load messages if not already loaded
       if (!state.messagesCache[conversation.id]) {
         await actions.loadConversationMessages(conversation.id);
       }
-      
+
       // Mark as read when selecting
       const userRole = getUserRole();
       const unreadField = userRole === 'CUSTOMER' ? 'customerUnreadCount' : 'contractorUnreadCount';
-      
+
       if (conversation[unreadField] > 0) {
         await actions.markAsRead(conversation.id);
       }
@@ -336,7 +365,7 @@ export const ChatProvider = ({ children }) => {
       const message = {
         type: messageType,
         conversationId,
-        senderId: getCurrentUserId(),
+        senderId: parseInt(getCurrentUserId()),
         senderType: getUserRole(),
         content,
         attachmentData,
@@ -350,9 +379,9 @@ export const ChatProvider = ({ children }) => {
 
     // Add message to state (used by WebSocket handler)
     addMessage: (conversationId, message) => {
-      dispatch({ 
-        type: CHAT_ACTIONS.ADD_MESSAGE, 
-        payload: { conversationId, message } 
+      dispatch({
+        type: CHAT_ACTIONS.ADD_MESSAGE,
+        payload: { conversationId, message }
       });
     },
 
@@ -366,16 +395,16 @@ export const ChatProvider = ({ children }) => {
     },
 
     setTypingStatus: (conversationId, userId, isTyping) => {
-      dispatch({ 
-        type: CHAT_ACTIONS.SET_TYPING_STATUS, 
-        payload: { conversationId, userId, isTyping } 
+      dispatch({
+        type: CHAT_ACTIONS.SET_TYPING_STATUS,
+        payload: { conversationId, userId, isTyping }
       });
     },
 
     updateMessageStatus: (messageId, status) => {
-      dispatch({ 
-        type: CHAT_ACTIONS.UPDATE_MESSAGE_STATUS, 
-        payload: { messageId, status } 
+      dispatch({
+        type: CHAT_ACTIONS.UPDATE_MESSAGE_STATUS,
+        payload: { messageId, status }
       });
     },
 
@@ -388,7 +417,7 @@ export const ChatProvider = ({ children }) => {
       const message = {
         type: 'TYPING_INDICATOR',
         conversationId,
-        senderId: getCurrentUserId(),
+        senderId: parseInt(getCurrentUserId()),
         senderType: getUserRole(),
         content: '',
         sendTime: new Date().toISOString()
@@ -410,6 +439,9 @@ export const ChatProvider = ({ children }) => {
     }
   };
 
+  // Store actions in ref for WebSocket handlers
+  actionsRef.current = actions;
+
   // Initialize on mount
   useEffect(() => {
     actions.loadConversations();
@@ -420,7 +452,7 @@ export const ChatProvider = ({ children }) => {
       actions.disconnect();
       Object.values(typingTimeoutRef.current).forEach(clearTimeout);
     };
-  }, []);
+  }, []); // Empty dependency array is intentional
 
   const value = {
     ...state,
@@ -438,11 +470,11 @@ export const ChatProvider = ({ children }) => {
 // Custom hook to use chat context
 export const useChatContext = () => {
   const context = useContext(ChatContext);
-  
+
   if (!context) {
     throw new Error('useChatContext must be used within a ChatProvider');
   }
-  
+
   return context;
 };
 

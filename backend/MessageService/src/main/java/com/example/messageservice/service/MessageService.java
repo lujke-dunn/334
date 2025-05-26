@@ -24,7 +24,13 @@ public class MessageService {
 
     @Transactional
     public Message sendMessage(WebSocketMessage wsMessage) {
-        // Validate conversation exists
+        // Skip saving control messages (AUTH, CONNECTION, HEARTBEAT, etc.)
+        if (isControlMessage(wsMessage.getType())) {
+            log.debug("Skipping save for control message type: {}", wsMessage.getType());
+            return createVirtualMessage(wsMessage);
+        }
+
+        // Validate conversation exists for actual messages
         Conversation conversation = conversationRepository.findById(wsMessage.getConversationId())
                 .orElseThrow(() -> new IllegalArgumentException("Conversation not found"));
 
@@ -32,7 +38,7 @@ public class MessageService {
         Message message = Message.builder()
                 .conversationId(wsMessage.getConversationId())
                 .senderId(wsMessage.getSenderId())
-                .senderType(mapToUserType(wsMessage.getSenderType())) // Convert String to UserType
+                .senderType(mapToUserType(wsMessage.getSenderType()))
                 .content(wsMessage.getContent())
                 .messageType(mapToMessageType(wsMessage.getType()))
                 .attachmentData(wsMessage.getAttachmentData())
@@ -41,7 +47,6 @@ public class MessageService {
 
         // If it's an attachment, calculate size
         if (message.getAttachmentData() != null) {
-            // Remove data URL prefix and calculate size
             String base64Data = message.getAttachmentData();
             if (base64Data.contains(",")) {
                 base64Data = base64Data.substring(base64Data.indexOf(",") + 1);
@@ -57,20 +62,42 @@ public class MessageService {
         // Save message
         Message savedMessage = messageRepository.save(message);
 
-        // Update conversation with the correct method name
+        // Update conversation
         conversation.updateLastMessageTime(LocalDateTime.now());
 
-        // Update unread counts using your method names
+        // Update unread counts
         if (UserType.CUSTOMER.equals(savedMessage.getSenderType())) {
-            conversation.incrementContractorUnreadCount(); // Customer sends, contractor gets unread message
+            conversation.incrementContractorUnreadCount();
         } else if (UserType.CONTRACTOR.equals(savedMessage.getSenderType())) {
-            conversation.incrementCustomerUnreadCount(); // Contractor sends, customer gets unread message
+            conversation.incrementCustomerUnreadCount();
         }
 
         conversationRepository.save(conversation);
 
         log.info("Message sent: {} in conversation {}", savedMessage.getId(), conversation.getId());
         return savedMessage;
+    }
+
+    private boolean isControlMessage(WebSocketMessage.MessageType type) {
+        return type == WebSocketMessage.MessageType.AUTH ||
+                type == WebSocketMessage.MessageType.CONNECTION ||
+                type == WebSocketMessage.MessageType.HEARTBEAT ||
+                type == WebSocketMessage.MessageType.TYPING_INDICATOR ||
+                type == WebSocketMessage.MessageType.READ_RECEIPT ||
+                type == WebSocketMessage.MessageType.ERROR;
+    }
+
+    private Message createVirtualMessage(WebSocketMessage wsMessage) {
+        // Create a virtual message for control messages (not saved to database)
+        return Message.builder()
+                .id(-1L) // Virtual ID
+                .conversationId(wsMessage.getConversationId())
+                .senderId(wsMessage.getSenderId())
+                .senderType(mapToUserType(wsMessage.getSenderType()))
+                .content(wsMessage.getContent())
+                .messageType(MessageType.SYSTEM)
+                .createdAt(LocalDateTime.now())
+                .build();
     }
 
     private UserType mapToUserType(String senderType) {
@@ -89,6 +116,7 @@ public class MessageService {
             case IMAGE -> MessageType.IMAGE;
             case FILE -> MessageType.FILE;
             case SYSTEM -> MessageType.SYSTEM;
+            case AUTH, CONNECTION, HEARTBEAT, TYPING_INDICATOR, READ_RECEIPT, ERROR -> MessageType.SYSTEM;
             default -> MessageType.TEXT;
         };
     }
