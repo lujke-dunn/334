@@ -2,6 +2,7 @@ import { BrowserRouter as Router, Routes, Route, Navigate } from 'react-router-d
 import { isAuthenticated } from './utils/api';
 import { ChatProvider } from './contexts/ChatContext';
 import Login from './pages/Login';
+import Signup from './pages/Signup';
 import Dashboard from './pages/Dashboard/Dashboard';
 import Profile from './pages/Profile';
 import ProtectedRoute from './pages/ProtectedRoute';
@@ -23,6 +24,9 @@ function App() {
           
             {/* Login route */}
             <Route path="/login" element={<Login />} />
+            
+            {/* Signup route */}
+            <Route path="/signup" element={<Signup />} />
           
             {/* Protected routes */}
             <Route path="/dashboard" element={

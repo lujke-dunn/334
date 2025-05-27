@@ -291,15 +291,15 @@
   }
   
   .btn-confirm {
-    background-color: #10b981;
+    background-color: #ff7a00;
     color: white;
-    box-shadow: 0 2px 4px rgba(16, 185, 129, 0.2);
+    box-shadow: 0 2px 4px rgba(255, 122, 0, 0.2);
   }
   
   .btn-confirm:hover {
-    background-color: #059669;
+    background-color: #e56e00;
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(16, 185, 129, 0.3);
+    box-shadow: 0 4px 8px rgba(255, 122, 0, 0.3);
   }
   
   .btn-reject {
@@ -315,15 +315,15 @@
   }
   
   .btn-complete {
-    background-color: #3b82f6;
+    background-color: #ff7a00;
     color: white;
-    box-shadow: 0 2px 4px rgba(59, 130, 246, 0.2);
+    box-shadow: 0 2px 4px rgba(255, 122, 0, 0.2);
   }
   
   .btn-complete:hover {
-    background-color: #2563eb;
+    background-color: #e56e00;
     transform: translateY(-1px);
-    box-shadow: 0 4px 8px rgba(59, 130, 246, 0.3);
+    box-shadow: 0 4px 8px rgba(255, 122, 0, 0.3);
   }
   
   /* Empty States */

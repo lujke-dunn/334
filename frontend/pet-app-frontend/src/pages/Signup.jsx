@@ -1,6 +1,8 @@
 import { useState } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import '../styles/Signup.css';
+import doggyBackground from '../assets/doggy_.jpg';
+import doggyLogo from '../assets/logo.png';
 
 const Signup = () => {
   const [formData, setFormData] = useState({
@@ -66,19 +68,36 @@ const Signup = () => {
       setError('');
       setLoading(true);
       
-      // In a real implementation, this would call the API
-      console.log('Signup form submitted:', formData);
+      // Call the signup API
+      const response = await fetch('http://localhost:8080/api/signup', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({
+          name: formData.name.trim(),
+          email: formData.email.trim(),
+          password: formData.password,
+          location: formData.location.trim(),
+          role: formData.role
+        }),
+      });
       
-      // For now, we'll simulate a successful signup
-      setTimeout(() => {
-        // Navigate to login page with success message
-        navigate('/login', { 
-          state: { message: 'Account created successfully! You can now log in.' } 
-        });
-      }, 1500);
+      if (!response.ok) {
+        const errorData = await response.json().catch(() => null);
+        if (response.status === 409) {
+          throw new Error('Email already exists. Please use a different email.');
+        }
+        throw new Error(errorData?.message || 'Failed to create account. Please try again.');
+      }
+      
+      // Navigate to login page with success message
+      navigate('/login', { 
+        state: { message: 'Account created successfully! You can now log in.' } 
+      });
       
     } catch (err) {
-      setError('Failed to create account. Please try again.');
+      setError(err.message || 'Failed to create account. Please try again.');
       console.error('Signup error:', err);
     } finally {
       setLoading(false);
@@ -87,12 +106,39 @@ const Signup = () => {
   
   return (
     <div className="signup-page">
-      <div className="signup-container">
-        <div className="signup-form-container">
-          <h1 className="signup-title">Create Account</h1>
+      {/* Left pane with image */}
+      <div className="image-pane">
+        <img 
+          src={doggyBackground}
+          alt="doggy" 
+          className="hero-image" 
+        />
+        <div className="image-overlay"></div>
+        
+        <div className="floating-elements">
+          <div className="floating-logo">
+            <img
+              src={doggyLogo}
+              alt="petlogo"
+              className="small-logo"
+            />
+          </div>
+        </div>
+      </div>
+      
+      {/* Right pane with signup form */}
+      <div className="form-pane">
+        <div className="signup-container">
+          <div className="signup-header">
+            <h1 className="signup-title">Create Account</h1>
+            <p className="signup-subtitle">Join us to find the best care for your pets</p>
+          </div>
           
           {error && (
-            <div className="error-message">{error}</div>
+            <div className="error-message">
+              <span className="message-icon">!</span>
+              {error}
+            </div>
           )}
           
           <form onSubmit={handleSubmit} className="signup-form">
@@ -199,13 +245,8 @@ const Signup = () => {
           </form>
           
           <div className="login-redirect">
-            <p>Already have an account?</p>
-            <Link to="/login" className="login-link">Log in</Link>
+            Already have an account? <Link to="/login" className="login-link">Log in</Link>
           </div>
-        </div>
-        
-        <div className="signup-footer">
-          <p className="copyright">© {new Date().getFullYear()} PetApp. All rights reserved.</p>
         </div>
       </div>
     </div>

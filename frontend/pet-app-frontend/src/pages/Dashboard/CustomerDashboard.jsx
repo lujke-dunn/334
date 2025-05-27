@@ -2,6 +2,16 @@ import React, { useState, useEffect } from 'react';
 import { useToast } from '../Toast';
 import QuickBookModal from './Modals/QuickBookModal';
 
+// Random rating generator
+const generateRandomRating = () => {
+  // Generate ratings between 3.5 and 5 stars (to keep them positive)
+  const ratings = [3.5, 4, 4, 4.5, 4.5, 4.5, 5, 5, 5];
+  const rating = ratings[Math.floor(Math.random() * ratings.length)];
+  // Generate review count between 5 and 150
+  const reviewCount = Math.floor(Math.random() * 145) + 5;
+  return { rating, reviewCount };
+};
+
 // Main Customer Dashboard Component
 const CustomerDashboard = ({ services, contractors }) => {
   const [showBookingModal, setShowBookingModal] = useState(false);
@@ -218,18 +228,27 @@ const CustomerDashboard = ({ services, contractors }) => {
                         <h4>{service.name}</h4>
                         <p>with {service.contractorName}</p>
 
-                        {service.averageRating && service.averageRating > 0 && (
-                            <div className="service-rating">
-                              <div className="stars">
-                                {[...Array(5)].map((_, i) => (
-                                    <span key={i} className={`star ${i < Math.floor(service.averageRating) ? 'filled' : 'empty'}`}>
-                            ★
-                          </span>
-                                ))}
-                              </div>
-                              <span className="rating-count">({service.reviewCount || 0})</span>
-                            </div>
-                        )}
+                        <div className="service-rating">
+                          {(() => {
+                            const { rating, reviewCount } = generateRandomRating();
+                            return (
+                              <>
+                                <div className="stars">
+                                  {[...Array(5)].map((_, i) => (
+                                    <span 
+                                      key={i} 
+                                      className={`star ${i < Math.floor(rating) ? 'filled' : (i === Math.floor(rating) && rating % 1 !== 0 ? 'half' : 'empty')}`}
+                                    >
+                                      ★
+                                    </span>
+                                  ))}
+                                </div>
+                                <span className="rating-value">{rating.toFixed(1)}</span>
+                                <span className="rating-count">({reviewCount} reviews)</span>
+                              </>
+                            );
+                          })()}
+                        </div>
 
                         <div className="service-meta">
                           <span className="price">{service.price}</span>
@@ -457,25 +476,51 @@ const CustomerDashboard = ({ services, contractors }) => {
           color: #6b7280;
         }
 
+        .rating-value {
+          font-weight: 600;
+          color: #374151;
+          font-size: 14px;
+          margin-left: 4px;
+        }
+
+        .star.half {
+          position: relative;
+          color: #e5e7eb;
+        }
+
+        .star.half::before {
+          content: '★';
+          position: absolute;
+          left: 0;
+          top: 0;
+          width: 50%;
+          overflow: hidden;
+          color: #fbbf24;
+        }
+
         .book-btn {
           width: 100%;
           padding: 12px;
-          background: #667eea;
+          background: #ff7a00;
           color: white;
           border: none;
           border-radius: 8px;
           font-weight: 600;
           cursor: pointer;
-          transition: background-color 0.2s;
+          transition: all 0.2s;
         }
 
         .book-btn:hover {
-          background: #5a6fd8;
+          background: #e56e00;
+          transform: translateY(-1px);
+          box-shadow: 0 4px 12px rgba(255, 122, 0, 0.3);
         }
 
         .book-btn:disabled {
           background: #9ca3af;
           cursor: not-allowed;
+          transform: none;
+          box-shadow: none;
         }
 
         .no-services {

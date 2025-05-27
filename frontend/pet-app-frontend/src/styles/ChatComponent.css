@@ -82,18 +82,18 @@
 }
 
 .chat-button-secondary:hover {
-  color: #f97316;
-  background-color: #fff7ed;
+  color: #28a745;
+  background-color: #f0f8f2;
 }
 
 .chat-button-primary {
-  background-color: #f97316;
+  background-color: #28a745;
   color: white;
   padding: 0.5rem 1rem;
 }
 
 .chat-button-primary:hover {
-  background-color: #ea580c;
+  background-color: #218838;
 }
 
 .chat-search-container {
@@ -120,8 +120,8 @@
 
 .chat-search-input:focus {
   background-color: white;
-  border-color: #f97316;
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+  border-color: #28a745;
+  box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
 }
 
 /* Chat Card */
@@ -138,8 +138,8 @@
 }
 
 .chat-card-selected {
-  background-color: #fff7ed;
-  border-left-color: #f97316;
+  background-color: #f0f8f2;
+  border-left-color: #28a745;
   box-shadow: 0 1px 3px rgba(0, 0, 0, 0.1);
 }
 
@@ -243,7 +243,7 @@
 }
 
 .chat-unread-badge {
-  background-color: #f97316;
+  background-color: #28a745;
   color: white;
   font-size: 0.75rem;
   border-radius: 9999px;
@@ -356,17 +356,17 @@
 }
 
 .conversation-action-button:hover {
-  color: #f97316;
-  background-color: #fff7ed;
+  color: #28a745;
+  background-color: #f0f8f2;
 }
 
 /* Service Info Banner */
 .service-info-banner {
   margin-top: 1rem;
   padding: 1rem;
-  background-color: #fff7ed;
+  background-color: #f0f8f2;
   border-radius: 0.5rem;
-  border: 1px solid #fed7aa;
+  border: 1px solid #c3e6cb;
 }
 
 .service-info-content {
@@ -377,17 +377,17 @@
 
 .service-name {
   font-weight: 500;
-  color: #9a3412;
+  color: #155724;
 }
 
 .service-date {
   font-size: 0.875rem;
-  color: #c2410c;
+  color: #1e7e34;
 }
 
 .service-details-button {
   font-size: 0.875rem;
-  color: #ea580c;
+  color: #28a745;
   background: transparent;
   border: none;
   cursor: pointer;
@@ -395,7 +395,7 @@
 }
 
 .service-details-button:hover {
-  color: #c2410c;
+  color: #218838;
 }
 
 /* Messages */
@@ -526,8 +526,8 @@
 
 .message-input:focus {
   background-color: white;
-  border-color: #f97316;
-  box-shadow: 0 0 0 3px rgba(249, 115, 22, 0.1);
+  border-color: #28a745;
+  box-shadow: 0 0 0 3px rgba(40, 167, 69, 0.1);
 }
 
 .message-input::placeholder {
@@ -540,7 +540,7 @@
   top: 50%;
   transform: translateY(-50%);
   padding: 0.5rem;
-  background-color: #f97316;
+  background-color: #28a745;
   color: white;
   border: none;
   border-radius: 0.5rem;
@@ -552,7 +552,7 @@
 }
 
 .send-button:hover:not(:disabled) {
-  background-color: #ea580c;
+  background-color: #218838;
 }
 
 .send-button:disabled {

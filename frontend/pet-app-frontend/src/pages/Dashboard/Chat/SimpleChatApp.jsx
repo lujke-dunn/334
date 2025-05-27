@@ -74,50 +74,68 @@ const SimpleChatApp = () => {
     <div style={{
       display: 'flex',
       height: '100vh',
-      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif'
+      fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif',
+      backgroundColor: '#f5f5f5'
     }}>
       {/* Sidebar */}
       <div style={{
-        width: '350px',
+        width: '380px',
         backgroundColor: 'white',
-        borderRight: '1px solid #e0e0e0',
+        boxShadow: '2px 0 10px rgba(0, 0, 0, 0.05)',
         display: 'flex',
         flexDirection: 'column'
       }}>
         {/* Header */}
         <div style={{
-          padding: '20px',
-          backgroundColor: '#075E54',
+          padding: '24px',
+          backgroundColor: '#2c3e50',
           color: 'white'
         }}>
-          <h2 style={{ margin: 0, fontSize: '20px' }}>
-            <MessageCircle size={24} style={{ verticalAlign: 'middle', marginRight: '8px' }} />
+          <h2 style={{ 
+            margin: 0, 
+            fontSize: '24px',
+            fontWeight: '600',
+            display: 'flex',
+            alignItems: 'center',
+            gap: '12px'
+          }}>
+            <MessageCircle size={28} />
             Pet Service Chats
           </h2>
-          <div style={{ fontSize: '14px', marginTop: '5px', opacity: 0.9 }}>
-            {userRole} • {bookings.length} chats available
+          <div style={{ 
+            fontSize: '14px', 
+            marginTop: '8px', 
+            opacity: 0.9,
+            fontWeight: '300'
+          }}>
+            {userRole} • {bookings.length} active conversations
           </div>
         </div>
 
         {/* Booking List */}
         <div style={{ flex: 1, overflowY: 'auto' }}>
           {loading ? (
-            <div style={{ padding: '20px', textAlign: 'center' }}>
-              <RefreshCw size={24} className="spinning" style={{ color: '#999' }} />
-              <p>Loading bookings...</p>
+            <div style={{ padding: '40px', textAlign: 'center' }}>
+              <RefreshCw size={28} className="spinning" style={{ color: '#28a745' }} />
+              <p style={{ marginTop: '16px', color: '#666' }}>Loading bookings...</p>
             </div>
           ) : error ? (
             <div style={{ padding: '20px', textAlign: 'center', color: '#d32f2f' }}>
               <p>{error}</p>
-              <button onClick={fetchBookings} style={{
+              <button onClick={loadBookings} style={{
                 marginTop: '10px',
-                padding: '8px 16px',
-                backgroundColor: '#075E54',
+                padding: '10px 20px',
+                backgroundColor: '#dc3545',
                 color: 'white',
                 border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}>
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#c82333'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#dc3545'}>
                 Retry
               </button>
             </div>
@@ -128,15 +146,20 @@ const SimpleChatApp = () => {
               <p style={{ fontSize: '14px' }}>
                 Only CONFIRMED, IN_PROGRESS, or COMPLETED bookings can have chats
               </p>
-              <button onClick={fetchBookings} style={{
+              <button onClick={loadBookings} style={{
                 marginTop: '20px',
-                padding: '8px 16px',
-                backgroundColor: '#075E54',
+                padding: '10px 24px',
+                backgroundColor: '#28a745',
                 color: 'white',
                 border: 'none',
-                borderRadius: '4px',
-                cursor: 'pointer'
-              }}>
+                borderRadius: '6px',
+                cursor: 'pointer',
+                fontSize: '14px',
+                fontWeight: '500',
+                transition: 'background-color 0.2s'
+              }}
+              onMouseEnter={(e) => e.target.style.backgroundColor = '#218838'}
+              onMouseLeave={(e) => e.target.style.backgroundColor = '#28a745'}>
                 Refresh
               </button>
             </div>
@@ -151,59 +174,96 @@ const SimpleChatApp = () => {
                   key={booking.id}
                   onClick={() => setSelectedBooking(booking)}
                   style={{
-                    padding: '15px 20px',
-                    borderBottom: '1px solid #f0f0f0',
+                    padding: '16px 20px',
+                    margin: '12px 16px',
+                    borderRadius: '12px',
                     cursor: 'pointer',
-                    backgroundColor: selectedBooking?.id === booking.id ? '#f5f5f5' : 'white',
-                    transition: 'background-color 0.2s'
+                    backgroundColor: selectedBooking?.id === booking.id 
+                      ? '#f0f8ff' 
+                      : 'white',
+                    boxShadow: selectedBooking?.id === booking.id 
+                      ? '0 4px 12px rgba(0, 0, 0, 0.1)' 
+                      : '0 2px 8px rgba(0, 0, 0, 0.05)',
+                    transition: 'all 0.3s ease',
+                    border: selectedBooking?.id === booking.id 
+                      ? '2px solid #28a745' 
+                      : '2px solid transparent'
                   }}
                   onMouseEnter={(e) => {
                     if (selectedBooking?.id !== booking.id) {
-                      e.currentTarget.style.backgroundColor = '#fafafa';
+                      e.currentTarget.style.transform = 'translateY(-2px)';
+                      e.currentTarget.style.boxShadow = '0 6px 16px rgba(0, 0, 0, 0.1)';
                     }
                   }}
                   onMouseLeave={(e) => {
                     if (selectedBooking?.id !== booking.id) {
-                      e.currentTarget.style.backgroundColor = 'white';
+                      e.currentTarget.style.transform = 'translateY(0)';
+                      e.currentTarget.style.boxShadow = '0 2px 8px rgba(0, 0, 0, 0.05)';
                     }
                   }}
                 >
-                  <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                  <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
                     <div style={{
-                      width: '40px',
-                      height: '40px',
+                      width: '48px',
+                      height: '48px',
                       borderRadius: '50%',
-                      backgroundColor: '#075E54',
+                      backgroundColor: '#f97316',
                       color: 'white',
                       display: 'flex',
                       alignItems: 'center',
                       justifyContent: 'center',
-                      fontSize: '18px',
-                      fontWeight: 'bold'
+                      fontSize: '20px',
+                      fontWeight: '600'
                     }}>
                       {otherParty?.charAt(0)?.toUpperCase() || '?'}
                     </div>
                     <div style={{ flex: 1 }}>
-                      <div style={{ fontWeight: '600' }}>{otherParty}</div>
-                      <div style={{ fontSize: '13px', color: '#666' }}>
-                        {booking.serviceName} • {booking.status}
+                      <div style={{ 
+                        fontWeight: '600',
+                        fontSize: '16px',
+                        color: '#1e293b',
+                        marginBottom: '4px'
+                      }}>{otherParty}</div>
+                      <div style={{ 
+                        fontSize: '14px', 
+                        color: '#64748b',
+                        display: 'flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }}>
+                        <span>{booking.serviceName}</span>
+                        <span style={{
+                          padding: '2px 8px',
+                          borderRadius: '6px',
+                          fontSize: '12px',
+                          fontWeight: '500',
+                          backgroundColor: booking.status === 'CONFIRMED' ? '#dbeafe' :
+                                         booking.status === 'IN_PROGRESS' ? '#fef3c7' :
+                                         booking.status === 'COMPLETED' ? '#d1fae5' : '#f3f4f6',
+                          color: booking.status === 'CONFIRMED' ? '#1e40af' :
+                                booking.status === 'IN_PROGRESS' ? '#92400e' :
+                                booking.status === 'COMPLETED' ? '#065f46' : '#374151'
+                        }}>
+                          {booking.status}
+                        </span>
                       </div>
                     </div>
                   </div>
                   <div style={{ 
-                    marginTop: '8px', 
-                    fontSize: '12px', 
-                    color: '#999',
+                    marginTop: '12px', 
+                    fontSize: '13px', 
+                    color: '#94a3b8',
                     display: 'flex',
-                    gap: '15px'
+                    gap: '20px',
+                    paddingLeft: '62px'
                   }}>
-                    <span>
-                      <Calendar size={12} style={{ verticalAlign: 'middle' }} />
-                      {' '}{new Date(booking.startTime).toLocaleDateString()}
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Calendar size={14} style={{ opacity: 0.7 }} />
+                      {new Date(booking.startTime).toLocaleDateString()}
                     </span>
-                    <span>
-                      <Clock size={12} style={{ verticalAlign: 'middle' }} />
-                      {' '}{new Date(booking.startTime).toLocaleTimeString([], { 
+                    <span style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
+                      <Clock size={14} style={{ opacity: 0.7 }} />
+                      {new Date(booking.startTime).toLocaleTimeString([], { 
                         hour: '2-digit', 
                         minute: '2-digit' 
                       })}
@@ -218,7 +278,12 @@ const SimpleChatApp = () => {
 
       {/* Chat Area */}
       {selectedBooking ? (
-        <div style={{ flex: 1, position: 'relative' }}>
+        <div style={{ 
+          flex: 1, 
+          position: 'relative',
+          display: 'flex',
+          flexDirection: 'column'
+        }}>
           <ChatComponent 
             booking={selectedBooking}
             onBack={() => setSelectedBooking(null)}
@@ -230,15 +295,48 @@ const SimpleChatApp = () => {
           display: 'flex',
           alignItems: 'center',
           justifyContent: 'center',
-          backgroundColor: '#f8f9fa'
+          backgroundColor: '#f8f9fa',
+          position: 'relative'
         }}>
-          <div style={{ textAlign: 'center', padding: '40px' }}>
-            <MessageCircle size={80} style={{ color: '#075E54', opacity: 0.5, marginBottom: '20px' }} />
-            <h2 style={{ margin: '0 0 10px 0', color: '#333' }}>
+          
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '60px',
+            position: 'relative',
+            zIndex: 1
+          }}>
+            <div style={{
+              width: '120px',
+              height: '120px',
+              margin: '0 auto 32px',
+              borderRadius: '50%',
+              backgroundColor: '#28a745',
+              display: 'flex',
+              alignItems: 'center',
+              justifyContent: 'center',
+              boxShadow: '0 10px 30px rgba(40, 167, 69, 0.2)'
+            }}>
+              <MessageCircle size={60} style={{ 
+                color: 'white'
+              }} />
+            </div>
+            <h2 style={{ 
+              margin: '0 0 16px 0', 
+              color: '#1e293b',
+              fontSize: '32px',
+              fontWeight: '700',
+              letterSpacing: '-0.5px'
+            }}>
               Welcome to Pet Service Chat
             </h2>
-            <p style={{ color: '#666', fontSize: '16px' }}>
-              Select a booking from the sidebar to start chatting
+            <p style={{ 
+              color: '#64748b', 
+              fontSize: '18px',
+              lineHeight: '1.6',
+              maxWidth: '400px',
+              margin: '0 auto'
+            }}>
+              Select a booking from the sidebar to start a conversation with your {userRole === 'CUSTOMER' ? 'service provider' : 'customer'}
             </p>
           </div>
         </div>

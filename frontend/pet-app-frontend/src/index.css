@@ -4,9 +4,9 @@
   line-height: 1.5;
   font-weight: 400;
   
-  color-scheme: dark;
-  color: rgba(255, 255, 255, 0.9);
-  background-color: #242424;
+  color-scheme: light;
+  color: #333333;
+  background-color: white;
   
   font-synthesis: none;
   text-rendering: optimizeLegibility;
@@ -22,7 +22,7 @@ body {
   margin: 0;
   min-width: 320px;
   min-height: 100vh;
-  background-color: #242424;
+  background-color: white;
 }
 
 a {
