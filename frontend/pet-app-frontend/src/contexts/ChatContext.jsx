@@ -103,7 +103,7 @@ export const ChatProvider = ({ children }) => {
     setMessages(prev => [...prev, newMessage]);
   };
 
-  // Send message - simplified like the test
+
   const sendMessage = (messageText) => {
     if (!websocketRef.current || websocketRef.current.readyState !== WebSocket.OPEN) {
       addMessage('Not connected to WebSocket', 'system');

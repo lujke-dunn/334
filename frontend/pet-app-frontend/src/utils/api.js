@@ -6,6 +6,11 @@ const MESSAGE_SERVICE_URL = 'http://localhost:8084/api';
 const BOOKING_SERVICE_URL = 'http://localhost:8083/api';
 const SERVICE_MANAGEMENT_URL = 'http://localhost:8082/api';
 
+import { createMissingConversations} from "./bookingService.js";
+
+export { createMissingConversations };
+
+
 // Authentication utilities
 export const getAccessToken = () => {
   return localStorage.getItem('accessToken') || sessionStorage.getItem('accessToken');
@@ -341,6 +346,30 @@ export const sendChatMessage = (websocket, conversationId, messageText) => {
     console.error('Error sending message:', error);
     return false;
   }
+};
+
+export const sendMessageToConversation = async (conversationId, messageText) => {
+  const currentUserId = getCurrentUserId();
+  const userRole = getUserRole();
+
+  const messageData = {
+    conversationId: conversationId,
+    senderId: parseInt(currentUserId),
+    content: messageText,
+    messageType: 'TEXT',
+    userType: userRole.toUpperCase()
+  };
+
+  const response = await makeAuthenticatedRequest(`${MESSAGE_SERVICE_URL}/messages`, {
+    method: 'POST',
+    body: JSON.stringify(messageData)
+  });
+
+  if (!response.ok) {
+    throw new Error('Failed to send message');
+  }
+
+  return await response.json();
 };
 
 export const sendTypingIndicator = (websocket, conversationId) => {
@@ -894,6 +923,7 @@ export default {
   createWebSocketConnection,
   sendChatMessage,
   sendTypingIndicator,
+  sendMessageToConversation,
 
   // Messaging
   fetchConversations,
@@ -916,6 +946,7 @@ export default {
   formatBookingForChat,
   canAccessBookingChat,
   createBookingChatConnection,
+  createMissingConversations,
 
   // Bookings
   fetchBookings,

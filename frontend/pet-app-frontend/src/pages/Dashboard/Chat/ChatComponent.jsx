@@ -1,589 +1,396 @@
-import React, { useState, useRef, useEffect } from 'react';
-import { Send, ArrowLeft, Calendar, Clock, MapPin, DollarSign, User, Wifi, WifiOff } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { Send, ArrowLeft, Calendar, Clock, MapPin, DollarSign, User, AlertCircle } from 'lucide-react';
 import {
-  createBookingChatConnection,
-  sendChatMessage,
-  sendTypingIndicator,
   fetchMessages,
-  markMessagesAsRead,
+  createWebSocketConnection,
+  sendChatMessage,
   getCurrentUserId,
-  getUserRole
+  getUserRole,
+  getOrCreateBookingConversation,
+  markMessagesAsRead
 } from '../../../utils/api';
 
-const BookingChatComponent = ({
-  chatInfo,
-  onBack,
-  userRole = getUserRole(),
-  currentUserId = getCurrentUserId()
+const ChatComponent = ({ 
+  booking, 
+  onBack 
 }) => {
   const [messages, setMessages] = useState([]);
   const [messageText, setMessageText] = useState('');
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState(null);
+  const [sending, setSending] = useState(false);
+  const [conversation, setConversation] = useState(null);
   const [websocket, setWebsocket] = useState(null);
   const [isConnected, setIsConnected] = useState(false);
-  const [error, setError] = useState(null);
-  const [isLoading, setIsLoading] = useState(true);
-  const [onlineUsers, setOnlineUsers] = useState(new Set());
-  const [typingUsers, setTypingUsers] = useState(new Set());
-
+  
   const messagesEndRef = useRef(null);
-  const typingTimeoutRef = useRef(null);
+  const currentUserId = parseInt(getCurrentUserId());
+  const userRole = getUserRole();
 
+  // Initialize chat when booking changes
   useEffect(() => {
-    if (chatInfo && chatInfo.conversationId) {
+    console.log('ChatComponent received booking:', booking);
+    if (booking && booking.id) {
       initializeChat();
     }
-
+    
     return () => {
       if (websocket) {
         websocket.close();
       }
-      if (typingTimeoutRef.current) {
-        clearTimeout(typingTimeoutRef.current);
-      }
     };
-  }, [chatInfo]);
+  }, [booking]);
 
+  // Auto scroll to bottom
   useEffect(() => {
     messagesEndRef.current?.scrollIntoView({ behavior: 'smooth' });
   }, [messages]);
 
   const initializeChat = async () => {
     try {
-      setIsLoading(true);
+      setLoading(true);
       setError(null);
+      setMessages([]);
+      
+      console.log('Initializing chat for booking:', booking.id);
+
+      // Get or create conversation
+      let conv = await getOrCreateBookingConversation(booking.id);
+      console.log('Conversation:', conv);
+      setConversation(conv);
 
       // Load existing messages
-      const existingMessages = await fetchMessages(chatInfo.conversationId, 0, 50);
-
-      // Format messages for display
-      const formattedMessages = existingMessages.map(msg => ({
-        id: msg.id,
-        content: msg.content,
-        senderId: msg.senderId,
-        senderType: msg.senderType,
-        type: msg.senderId === parseInt(currentUserId) ? 'sent' : 'received',
-        timestamp: new Date(msg.createdAt || msg.sendTime).toLocaleTimeString(),
-        messageType: msg.type || 'TEXT'
-      }));
-
-      setMessages(formattedMessages.reverse());
+      try {
+        const existingMessages = await fetchMessages(conv.id, 0, 50);
+        console.log('Loaded messages:', existingMessages.length);
+        
+        const formatted = existingMessages.map(msg => ({
+          id: msg.id,
+          content: msg.content,
+          senderId: msg.senderId,
+          timestamp: new Date(msg.createdAt).toLocaleTimeString(),
+          isOwnMessage: msg.senderId === currentUserId
+        }));
+        
+        setMessages(formatted.reverse());
+      } catch (err) {
+        console.warn('Could not load messages:', err);
+      }
 
       // Mark messages as read
-      await markMessagesAsRead(chatInfo.conversationId);
+      try {
+        await markMessagesAsRead(conv.id);
+      } catch (err) {
+        console.warn('Could not mark messages as read:', err);
+      }
 
       // Connect WebSocket
-      connectWebSocket();
+      connectWebSocket(conv.id);
 
     } catch (err) {
       console.error('Error initializing chat:', err);
-      setError('Failed to load chat: ' + err.message);
+      setError('Failed to load chat. Please try again.');
     } finally {
-      setIsLoading(false);
+      setLoading(false);
     }
   };
 
-  const connectWebSocket = () => {
+  const connectWebSocket = (conversationId) => {
     try {
-      const ws = createBookingChatConnection(
-        chatInfo.bookingId,
-        chatInfo.conversationId,
+      const ws = createWebSocketConnection(
         handleWebSocketMessage,
         handleWebSocketError,
         handleWebSocketClose,
-        handleParticipantUpdate
+        conversationId,
+        currentUserId
       );
 
-      setWebsocket(ws);
-
-      // Handle connection open
       ws.onopen = () => {
-        console.log('✅ Chat WebSocket connected for booking:', chatInfo.bookingId);
+        console.log('WebSocket connected');
         setIsConnected(true);
-        setError(null);
       };
 
+      setWebsocket(ws);
     } catch (err) {
-      console.error('Error connecting WebSocket:', err);
-      setError('Failed to connect to chat');
+      console.error('WebSocket connection error:', err);
+      setIsConnected(false);
     }
   };
 
   const handleWebSocketMessage = (message) => {
-    console.log('📨 Received message:', message);
-
+    console.log('Received message:', message);
+    
     if (message.type === 'TEXT') {
       const newMessage = {
         id: message.messageId || Date.now(),
         content: message.content,
         senderId: message.senderId,
-        senderType: message.senderType,
-        type: message.senderId === parseInt(currentUserId) ? 'sent' : 'received',
         timestamp: new Date().toLocaleTimeString(),
-        messageType: 'TEXT'
+        isOwnMessage: message.senderId === currentUserId
       };
-
+      
       setMessages(prev => [...prev, newMessage]);
-
-    } else if (message.type === 'TYPING_INDICATOR') {
-      if (message.senderId !== parseInt(currentUserId)) {
-        setTypingUsers(prev => new Set([...prev, message.senderId]));
-
-        // Clear typing indicator after 3 seconds
-        setTimeout(() => {
-          setTypingUsers(prev => {
-            const updated = new Set(prev);
-            updated.delete(message.senderId);
-            return updated;
-          });
-        }, 3000);
-      }
-
-    } else if (message.type === 'SYSTEM') {
-      const systemMessage = {
-        id: Date.now(),
-        content: message.content,
-        type: 'system',
-        timestamp: new Date().toLocaleTimeString(),
-        messageType: 'SYSTEM'
-      };
-      setMessages(prev => [...prev, systemMessage]);
-
-    } else if (message.type === 'ERROR') {
-      setError(message.content);
     }
   };
 
   const handleWebSocketError = (error) => {
     console.error('WebSocket error:', error);
-    setError('Connection error occurred');
     setIsConnected(false);
   };
 
-  const handleWebSocketClose = (event) => {
-    console.log('WebSocket closed:', event.code, event.reason);
+  const handleWebSocketClose = () => {
+    console.log('WebSocket closed');
     setIsConnected(false);
-
-    // Try to reconnect after 3 seconds if not a normal close
-    if (event.code !== 1000) {
-      setTimeout(() => {
-        console.log('🔄 Attempting to reconnect...');
-        connectWebSocket();
-      }, 3000);
-    }
   };
 
-  const handleParticipantUpdate = (update) => {
-    setOnlineUsers(new Set(update.onlineUsers));
-    console.log('👥 Participant update:', update);
-  };
+  const sendMessage = async (e) => {
+    e.preventDefault();
+    
+    if (!messageText.trim() || !conversation || sending) return;
 
-  const handleSendMessage = () => {
-    if (messageText.trim() && websocket && isConnected) {
-      const success = sendChatMessage(websocket, chatInfo.conversationId, messageText.trim());
-      if (success) {
-        setMessageText('');
+    setSending(true);
+    const msgContent = messageText.trim();
+    setMessageText('');
+
+    try {
+      // Try WebSocket first
+      if (websocket && websocket.readyState === WebSocket.OPEN) {
+        const success = sendChatMessage(websocket, conversation.id, msgContent);
+        if (!success) {
+          throw new Error('WebSocket send failed');
+        }
+      } else {
+        // Fallback to REST API
+        const response = await fetch(`http://localhost:8084/api/messages`, {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          body: JSON.stringify({
+            conversationId: conversation.id,
+            senderId: currentUserId,
+            content: msgContent,
+            messageType: 'TEXT',
+            userType: userRole.toUpperCase()
+          })
+        });
+
+        if (!response.ok) {
+          throw new Error('Failed to send message');
+        }
+
+        // Add message to UI for REST API sends
+        const newMessage = {
+          id: Date.now(),
+          content: msgContent,
+          senderId: currentUserId,
+          timestamp: new Date().toLocaleTimeString(),
+          isOwnMessage: true
+        };
+        
+        setMessages(prev => [...prev, newMessage]);
       }
+    } catch (err) {
+      console.error('Error sending message:', err);
+      setError('Failed to send message');
+      setMessageText(msgContent); // Restore message
+    } finally {
+      setSending(false);
     }
   };
 
-  const handleKeyPress = (e) => {
-    if (e.key === 'Enter' && !e.shiftKey) {
-      e.preventDefault();
-      handleSendMessage();
-    }
-  };
-
-  const handleInputChange = (e) => {
-    setMessageText(e.target.value);
-
-    // Send typing indicator occasionally
-    if (e.target.value.length % 5 === 1 && websocket && isConnected) {
-      sendTypingIndicator(websocket, chatInfo.conversationId);
-    }
-  };
-
-  const getOtherParticipant = () => {
-    if (!chatInfo || !chatInfo.participants || chatInfo.participants.length === 0) {
-      return null;
-    }
-    return chatInfo.participants.find(p => p.id !== parseInt(currentUserId));
-  };
-
-  const otherParticipant = getOtherParticipant();
-  const bookingInfo = chatInfo?.bookingInfo;
-
-  // Add safety check for chatInfo
-  if (!chatInfo) {
+  if (!booking) {
     return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '400px',
-        backgroundColor: '#f8f9fa',
-        color: '#666'
-      }}>
-        <div style={{ textAlign: 'center' }}>
-          <h3>No chat selected</h3>
-          <p>Please select a booking to start chatting</p>
-          <button
-            onClick={onBack}
-            style={{
-              padding: '8px 16px',
-              border: '1px solid #ddd',
-              borderRadius: '4px',
-              backgroundColor: 'white',
-              cursor: 'pointer'
-            }}
-          >
-            Back to Chat List
-          </button>
-        </div>
+      <div style={{ padding: '20px', textAlign: 'center' }}>
+        <p>No booking selected</p>
+        <button onClick={onBack}>Go Back</button>
       </div>
     );
   }
 
-  if (isLoading) {
-    return (
-      <div style={{
-        display: 'flex',
-        justifyContent: 'center',
-        alignItems: 'center',
-        height: '400px',
-        backgroundColor: '#f8f9fa'
-      }}>
-        <div>Loading chat...</div>
-      </div>
-    );
-  }
+  const otherPartyName = userRole === 'CUSTOMER' ? booking.contractorName : booking.customerName;
 
   return (
     <div style={{
-      maxWidth: '900px',
-      margin: '0 auto',
-      padding: '20px',
-      fontFamily: 'Arial, sans-serif',
-      backgroundColor: '#f5f5f5',
-      minHeight: '100vh'
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      bottom: 0,
+      display: 'flex',
+      flexDirection: 'column',
+      backgroundColor: '#f5f5f5'
     }}>
+      {/* Header */}
       <div style={{
         backgroundColor: 'white',
-        borderRadius: '8px',
-        boxShadow: '0 2px 4px rgba(0,0,0,0.1)',
-        overflow: 'hidden'
+        borderBottom: '1px solid #e0e0e0',
+        padding: '15px 20px'
       }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: '15px' }}>
+          <button
+            onClick={onBack}
+            style={{
+              padding: '8px',
+              border: 'none',
+              background: 'none',
+              cursor: 'pointer',
+              display: 'flex',
+              alignItems: 'center',
+              gap: '5px',
+              color: '#666'
+            }}
+          >
+            <ArrowLeft size={20} />
+            Back
+          </button>
+          
+          <div style={{ flex: 1 }}>
+            <h3 style={{ margin: 0, fontSize: '18px' }}>{otherPartyName}</h3>
+            <p style={{ margin: '2px 0 0 0', fontSize: '14px', color: '#666' }}>
+              {booking.serviceName} • {booking.status}
+            </p>
+          </div>
 
-        {/* Header */}
-        <div style={{
-          padding: '16px 20px',
-          borderBottom: '1px solid #eee',
-          backgroundColor: '#fff'
-        }}>
-          <div style={{
+          <div style={{ textAlign: 'right', fontSize: '13px', color: '#666' }}>
+            <div><Calendar size={12} style={{ verticalAlign: 'middle' }} /> {new Date(booking.startTime).toLocaleDateString()}</div>
+            <div><Clock size={12} style={{ verticalAlign: 'middle' }} /> {new Date(booking.startTime).toLocaleTimeString()}</div>
+          </div>
+        </div>
+      </div>
+
+      {/* Messages Area */}
+      <div style={{
+        flex: 1,
+        overflowY: 'auto',
+        padding: '20px',
+        backgroundColor: '#e5ddd5'
+      }}>
+        {loading ? (
+          <div style={{ textAlign: 'center', padding: '40px' }}>
+            <p>Loading messages...</p>
+          </div>
+        ) : error ? (
+          <div style={{ 
+            textAlign: 'center', 
+            padding: '40px',
+            backgroundColor: '#fee',
+            borderRadius: '8px',
+            color: '#c00'
+          }}>
+            <AlertCircle size={24} style={{ marginBottom: '10px' }} />
+            <p>{error}</p>
+            <button 
+              onClick={initializeChat}
+              style={{
+                marginTop: '10px',
+                padding: '8px 16px',
+                backgroundColor: '#c00',
+                color: 'white',
+                border: 'none',
+                borderRadius: '4px',
+                cursor: 'pointer'
+              }}
+            >
+              Retry
+            </button>
+          </div>
+        ) : messages.length === 0 ? (
+          <div style={{ textAlign: 'center', padding: '40px', color: '#666' }}>
+            <p>No messages yet. Start the conversation!</p>
+          </div>
+        ) : (
+          messages.map(msg => (
+            <div
+              key={msg.id}
+              style={{
+                marginBottom: '10px',
+                display: 'flex',
+                justifyContent: msg.isOwnMessage ? 'flex-end' : 'flex-start'
+              }}
+            >
+              <div style={{
+                maxWidth: '70%',
+                padding: '10px 15px',
+                borderRadius: '18px',
+                backgroundColor: msg.isOwnMessage ? '#DCF8C6' : 'white',
+                boxShadow: '0 1px 2px rgba(0,0,0,0.1)'
+              }}>
+                <div>{msg.content}</div>
+                <div style={{
+                  fontSize: '11px',
+                  color: '#999',
+                  marginTop: '4px',
+                  textAlign: 'right'
+                }}>
+                  {msg.timestamp}
+                </div>
+              </div>
+            </div>
+          ))
+        )}
+        <div ref={messagesEndRef} />
+      </div>
+
+      {/* Input Area */}
+      <form onSubmit={sendMessage} style={{
+        padding: '15px',
+        backgroundColor: 'white',
+        borderTop: '1px solid #e0e0e0',
+        display: 'flex',
+        gap: '10px',
+        alignItems: 'center'
+      }}>
+        <input
+          type="text"
+          value={messageText}
+          onChange={(e) => setMessageText(e.target.value)}
+          placeholder="Type a message..."
+          disabled={sending || loading}
+          style={{
+            flex: 1,
+            padding: '10px 15px',
+            border: '1px solid #e0e0e0',
+            borderRadius: '25px',
+            outline: 'none',
+            fontSize: '14px'
+          }}
+        />
+        <button
+          type="submit"
+          disabled={!messageText.trim() || sending || loading}
+          style={{
+            padding: '10px',
+            backgroundColor: messageText.trim() && !sending && !loading ? '#075E54' : '#ccc',
+            color: 'white',
+            border: 'none',
+            borderRadius: '50%',
+            width: '40px',
+            height: '40px',
             display: 'flex',
             alignItems: 'center',
-            gap: '12px',
-            marginBottom: '12px'
-          }}>
-            <button
-              onClick={onBack}
-              style={{
-                display: 'flex',
-                alignItems: 'center',
-                gap: '4px',
-                padding: '6px 12px',
-                border: '1px solid #ddd',
-                borderRadius: '4px',
-                backgroundColor: 'white',
-                cursor: 'pointer',
-                fontSize: '14px'
-              }}
-            >
-              <ArrowLeft size={16} />
-              Back to Chats
-            </button>
+            justifyContent: 'center',
+            cursor: messageText.trim() && !sending && !loading ? 'pointer' : 'not-allowed'
+          }}
+        >
+          <Send size={20} />
+        </button>
+      </form>
 
-            <div style={{ flex: 1 }}>
-              <h1 style={{
-                margin: '0',
-                fontSize: '20px',
-                color: '#333',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '8px'
-              }}>
-                {bookingInfo?.title}
-                {isConnected ? (
-                  <Wifi size={18} style={{ color: 'green' }} />
-                ) : (
-                  <WifiOff size={18} style={{ color: 'red' }} />
-                )}
-              </h1>
-
-              {otherParticipant && (
-                <p style={{
-                  margin: '4px 0 0 0',
-                  color: '#666',
-                  fontSize: '14px',
-                  display: 'flex',
-                  alignItems: 'center',
-                  gap: '6px'
-                }}>
-                  <User size={14} />
-                  Chatting with: <strong>{otherParticipant.name}</strong> ({otherParticipant.role})
-                  {onlineUsers.has(otherParticipant.id) && (
-                    <span style={{
-                      width: '8px',
-                      height: '8px',
-                      borderRadius: '50%',
-                      backgroundColor: 'green',
-                      display: 'inline-block',
-                      marginLeft: '4px'
-                    }} title="Online" />
-                  )}
-                </p>
-              )}
-            </div>
-          </div>
-
-          {/* Booking Info Bar */}
-          {bookingInfo && (
-            <div style={{
-              display: 'grid',
-              gridTemplateColumns: 'repeat(auto-fit, minmax(150px, 1fr))',
-              gap: '12px',
-              padding: '12px',
-              backgroundColor: '#f8f9fa',
-              borderRadius: '6px',
-              fontSize: '13px'
-            }}>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Calendar size={14} style={{ color: '#007bff' }} />
-                <span><strong>Date:</strong> {bookingInfo.date}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <Clock size={14} style={{ color: '#007bff' }} />
-                <span><strong>Time:</strong> {bookingInfo.time}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <DollarSign size={14} style={{ color: '#007bff' }} />
-                <span><strong>Price:</strong> {bookingInfo.price}</span>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: '6px' }}>
-                <MapPin size={14} style={{ color: '#007bff' }} />
-                <span><strong>Status:</strong> {bookingInfo.status}</span>
-              </div>
-            </div>
-          )}
-        </div>
-
-        {/* Connection Status */}
-        {error && (
-          <div style={{
-            padding: '12px 20px',
-            backgroundColor: '#f8d7da',
-            color: '#721c24',
-            borderBottom: '1px solid #eee',
-            fontSize: '14px'
-          }}>
-            ⚠️ {error}
-          </div>
-        )}
-
-        {/* Messages */}
+      {/* Connection Status */}
+      {!loading && (
         <div style={{
-          height: '500px',
-          overflowY: 'auto',
-          padding: '16px 20px',
-          backgroundColor: '#fafafa'
+          padding: '5px',
+          backgroundColor: isConnected ? '#d4edda' : '#f8d7da',
+          color: isConnected ? '#155724' : '#721c24',
+          textAlign: 'center',
+          fontSize: '12px'
         }}>
-          {messages.length === 0 ? (
-            <div style={{
-              textAlign: 'center',
-              color: '#666',
-              padding: '40px 20px',
-              fontSize: '14px'
-            }}>
-              <div style={{ marginBottom: '16px' }}>
-                <Calendar size={32} style={{ opacity: 0.3 }} />
-              </div>
-              <p style={{ margin: '0 0 8px 0' }}>No messages yet for this booking.</p>
-              <p style={{ margin: '0', fontSize: '12px' }}>
-                Start the conversation about your {bookingInfo?.title} service!
-              </p>
-            </div>
-          ) : (
-            <>
-              {messages.map((message) => (
-                <div
-                  key={message.id}
-                  style={{
-                    marginBottom: '12px',
-                    display: 'flex',
-                    justifyContent: message.type === 'sent' ? 'flex-end' : 'flex-start'
-                  }}
-                >
-                  <div style={{
-                    maxWidth: '70%',
-                    padding: '10px 14px',
-                    borderRadius: '12px',
-                    backgroundColor:
-                      message.type === 'sent' ? '#007bff' :
-                      message.type === 'system' ? '#fff3cd' : '#e9ecef',
-                    color:
-                      message.type === 'sent' ? 'white' :
-                      message.type === 'system' ? '#856404' : '#333',
-                    fontSize: '14px',
-                    lineHeight: '1.4',
-                    wordBreak: 'break-word'
-                  }}>
-                    {message.type === 'system' && (
-                      <div style={{
-                        fontSize: '12px',
-                        opacity: 0.8,
-                        marginBottom: '4px',
-                        fontWeight: 'bold'
-                      }}>
-                        📋 System Message
-                      </div>
-                    )}
-
-                    <div>{message.content}</div>
-
-                    <div style={{
-                      fontSize: '11px',
-                      opacity: 0.7,
-                      marginTop: '4px',
-                      textAlign: message.type === 'sent' ? 'right' : 'left'
-                    }}>
-                      {message.timestamp}
-                      {message.type === 'sent' && (
-                        <span style={{ marginLeft: '4px' }}>✓</span>
-                      )}
-                    </div>
-                  </div>
-                </div>
-              ))}
-
-              {/* Typing Indicator */}
-              {typingUsers.size > 0 && (
-                <div style={{
-                  marginBottom: '12px',
-                  display: 'flex',
-                  justifyContent: 'flex-start'
-                }}>
-                  <div style={{
-                    padding: '8px 12px',
-                    borderRadius: '12px',
-                    backgroundColor: '#e9ecef',
-                    color: '#666',
-                    fontSize: '13px',
-                    fontStyle: 'italic'
-                  }}>
-                    {otherParticipant?.name} is typing...
-                  </div>
-                </div>
-              )}
-            </>
-          )}
-          <div ref={messagesEndRef} />
+          {isConnected ? '🟢 Connected' : '🔴 Disconnected (messages will still send)'}
         </div>
-
-        {/* Message Input */}
-        <div style={{
-          padding: '16px 20px',
-          borderTop: '1px solid #eee',
-          backgroundColor: '#fff'
-        }}>
-          <div style={{ display: 'flex', gap: '12px', alignItems: 'flex-end' }}>
-            <textarea
-              value={messageText}
-              onChange={handleInputChange}
-              onKeyPress={handleKeyPress}
-              placeholder={`Type your message about ${bookingInfo?.title || 'this booking'}...`}
-              style={{
-                flex: 1,
-                padding: '10px 14px',
-                border: '1px solid #ddd',
-                borderRadius: '20px',
-                resize: 'none',
-                minHeight: '40px',
-                maxHeight: '120px',
-                fontFamily: 'Arial, sans-serif',
-                fontSize: '14px',
-                outline: 'none',
-                transition: 'border-color 0.2s'
-              }}
-              onFocus={(e) => e.target.style.borderColor = '#007bff'}
-              onBlur={(e) => e.target.style.borderColor = '#ddd'}
-            />
-            <button
-              onClick={handleSendMessage}
-              disabled={!messageText.trim() || !isConnected}
-              style={{
-                padding: '10px 16px',
-                border: 'none',
-                borderRadius: '20px',
-                backgroundColor: (!messageText.trim() || !isConnected) ? '#ccc' : '#007bff',
-                color: 'white',
-                cursor: (!messageText.trim() || !isConnected) ? 'not-allowed' : 'pointer',
-                fontWeight: 'bold',
-                display: 'flex',
-                alignItems: 'center',
-                gap: '6px',
-                fontSize: '14px',
-                transition: 'background-color 0.2s'
-              }}
-            >
-              <Send size={16} />
-              Send
-            </button>
-          </div>
-
-          {/* Input Info */}
-          <div style={{
-            marginTop: '8px',
-            fontSize: '11px',
-            color: '#666',
-            textAlign: 'center'
-          }}>
-            {isConnected ? (
-              <>
-                Press Enter to send •
-                {onlineUsers.size > 1 ? ` ${onlineUsers.size} users online` : ' You are online'}
-              </>
-            ) : (
-              '🔄 Reconnecting...'
-            )}
-          </div>
-        </div>
-      </div>
-
-      {/* Debug Info */}
-      <div style={{
-        marginTop: '16px',
-        padding: '12px',
-        backgroundColor: '#f8f9fa',
-        borderRadius: '6px',
-        fontSize: '11px',
-        color: '#666'
-      }}>
-        <details>
-          <summary style={{ cursor: 'pointer', marginBottom: '8px' }}>
-            Debug Info
-          </summary>
-          <div>
-            <strong>Booking ID:</strong> {chatInfo?.bookingId} |
-            <strong> Conversation ID:</strong> {chatInfo?.conversationId} |
-            <strong> Messages:</strong> {messages.length} |
-            <strong> Connected:</strong> {isConnected ? 'Yes' : 'No'} |
-            <strong> Participants:</strong> {chatInfo?.participants?.length || 0} |
-            <strong> Online:</strong> {onlineUsers.size}
-          </div>
-        </details>
-      </div>
+      )}
     </div>
   );
 };
 
-export default BookingChatComponent;
+export default ChatComponent;

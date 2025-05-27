@@ -6,7 +6,10 @@ import {
   formatBookingForChat,
   canAccessBookingChat,
   getCurrentUserId,
-  getUserRole
+  getUserRole,
+  fetchBookings,
+  fetchContractorBookings,
+  getConversationByBookingId
 } from '../../../utils/api';
 
 const BookingChatList = ({ onSelectChat }) => {
@@ -24,44 +27,99 @@ const BookingChatList = ({ onSelectChat }) => {
       setLoading(true);
       setError(null);
 
-      console.log('🔍 Loading chat list...');
+      console.log('🔍 Loading bookings for chat...');
       console.log('👤 Current user:', getCurrentUserId(), getUserRole());
 
-      // First, let's try to get bookings directly
       const userRole = getUserRole();
       console.log('📋 Getting bookings for role:', userRole);
 
-      let directBookings;
+      // Get all bookings directly
+      let bookingsResult;
       try {
         if (userRole === 'CUSTOMER') {
-          directBookings = await fetchBookings(0, 20);
+          bookingsResult = await fetchBookings(0, 20);
         } else {
-          directBookings = await fetchContractorBookings(0, 20);
+          bookingsResult = await fetchContractorBookings(0, 20);
         }
-        console.log('📦 Direct bookings result:', directBookings);
+        console.log('📦 Bookings result:', bookingsResult);
       } catch (bookingError) {
-        console.error('❌ Error fetching bookings directly:', bookingError);
+        console.error('❌ Error fetching bookings:', bookingError);
         setError('Failed to load bookings: ' + bookingError.message);
         return;
       }
 
-      // Now try to get the chat list
-      const chats = await getBookingChatList();
-      console.log('💬 Chat list result:', chats);
+      // Extract bookings from result (could be paginated or direct array)
+      const bookings = bookingsResult.content || bookingsResult || [];
+      console.log('📚 Total bookings found:', bookings.length);
 
-      setChatList(chats);
+      // Filter for chat-eligible bookings (CONFIRMED, IN_PROGRESS, COMPLETED)
+      const eligibleBookings = bookings.filter(booking => 
+        ['CONFIRMED', 'IN_PROGRESS', 'COMPLETED'].includes(booking.status)
+      );
+      console.log('✅ Eligible bookings for chat:', eligibleBookings.length);
 
-      if (chats.length === 0) {
-        console.warn('⚠️ No chats found. This could mean:');
-        console.warn('1. No confirmed bookings exist');
-        console.warn('2. Booking service is not running');
-        console.warn('3. Message service is not running');
-        console.warn('4. User has no bookings');
+      // For each eligible booking, check if it has a conversation
+      const bookingsWithChatInfo = await Promise.all(
+        eligibleBookings.map(async (booking) => {
+          try {
+            // Try to get existing conversation
+            const conversation = await getConversationByBookingId(booking.id);
+            
+            return {
+              booking: booking,
+              hasChat: !!conversation,
+              canCreateChat: !conversation && booking.status === 'CONFIRMED',
+              conversation: conversation,
+              conversationId: conversation?.id || null,
+              unreadCount: conversation ? (
+                userRole === 'CUSTOMER' 
+                  ? conversation.customerUnreadCount || 0
+                  : conversation.contractorUnreadCount || 0
+              ) : 0,
+              lastMessage: null, // Will be populated if needed
+              lastActivity: conversation?.lastMessageTime || null,
+              otherParticipant: {
+                id: userRole === 'CUSTOMER' ? booking.contractorId : booking.customerId,
+                name: userRole === 'CUSTOMER' ? booking.contractorName : booking.customerName,
+                role: userRole === 'CUSTOMER' ? 'CONTRACTOR' : 'CUSTOMER'
+              }
+            };
+          } catch (error) {
+            console.warn(`Could not check conversation for booking ${booking.id}:`, error);
+            // Even if we can't check for conversation, still show the booking
+            return {
+              booking: booking,
+              hasChat: false,
+              canCreateChat: booking.status === 'CONFIRMED',
+              conversation: null,
+              conversationId: null,
+              unreadCount: 0,
+              lastMessage: null,
+              lastActivity: null,
+              otherParticipant: {
+                id: userRole === 'CUSTOMER' ? booking.contractorId : booking.customerId,
+                name: userRole === 'CUSTOMER' ? booking.contractorName : booking.customerName,
+                role: userRole === 'CUSTOMER' ? 'CONTRACTOR' : 'CUSTOMER'
+              }
+            };
+          }
+        })
+      );
+
+      console.log('💬 Bookings with chat info:', bookingsWithChatInfo);
+      setChatList(bookingsWithChatInfo);
+
+      if (bookingsWithChatInfo.length === 0) {
+        console.warn('⚠️ No eligible bookings found for chat');
+        if (bookings.length > 0) {
+          console.warn('📋 Total bookings:', bookings.length);
+          console.warn('🚫 But none are CONFIRMED, IN_PROGRESS, or COMPLETED');
+        }
       }
 
     } catch (err) {
-      console.error('❌ Error loading chat list:', err);
-      setError('Failed to load chats: ' + err.message);
+      console.error('❌ Error loading bookings:', err);
+      setError('Failed to load bookings: ' + err.message);
     } finally {
       setLoading(false);
     }
@@ -198,9 +256,14 @@ const BookingChatList = ({ onSelectChat }) => {
             color: '#666'
           }}>
             <MessageCircle size={48} style={{ opacity: 0.3, marginBottom: '16px' }} />
-            <h3 style={{ margin: '0 0 8px 0', color: '#333' }}>No chats available</h3>
+            <h3 style={{ margin: '0 0 8px 0', color: '#333' }}>No bookings available for chat</h3>
             <p style={{ margin: '0 0 16px 0', fontSize: '14px' }}>
-              Chats will appear here when you have confirmed bookings
+              You can start chatting when you have bookings with status: CONFIRMED, IN_PROGRESS, or COMPLETED
+            </p>
+            <p style={{ margin: '0', fontSize: '13px', color: '#999' }}>
+              {getUserRole() === 'CUSTOMER' 
+                ? 'Create a booking and wait for the contractor to accept it'
+                : 'Accept a booking request to start chatting with customers'}
             </p>
 
             {/* Debug Info */}

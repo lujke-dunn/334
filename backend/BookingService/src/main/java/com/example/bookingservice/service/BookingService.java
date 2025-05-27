@@ -14,20 +14,25 @@ import com.example.bookingservice.repository.BookingRepository;
 import com.example.bookingservice.security.SecurityService;
 import jakarta.persistence.EntityNotFoundException;
 import lombok.RequiredArgsConstructor;
+import lombok.extern.slf4j.Slf4j;
 import org.springframework.data.domain.Page;
 import org.springframework.data.domain.Pageable;
 import org.springframework.security.access.AccessDeniedException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import org.springframework.web.client.RestTemplate;
 
 import java.math.BigDecimal;
 import java.time.LocalDateTime;
 import java.time.temporal.ChronoUnit;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
 @RequiredArgsConstructor
+@Slf4j
 public class BookingService {
 
     private final BookingRepository bookingRepository;
@@ -35,6 +40,7 @@ public class BookingService {
     private final ServiceInfoService serviceInfoService;
     private final SecurityService securityService;
     private final NotificationService notificationService;
+    private final RestTemplate restTemplate;
 
     @Transactional
     public BookingResponse createBooking(BookingRequest request, String userEmail) {
@@ -200,7 +206,43 @@ public class BookingService {
         // Notify customer
         notificationService.notifyBookingAccepted(savedBooking);
 
+        // Create conversation for the accepted booking
+        try {
+            createConversationForBooking(savedBooking);
+            log.info("Created conversation for accepted booking: {}", bookingId);
+        } catch (Exception e) {
+            // Log but don't fail the booking acceptance
+            log.error("Failed to create conversation for booking " + bookingId + ", but booking was accepted successfully", e);
+        }
+
         return mapToResponse(savedBooking);
+    }
+
+    private void createConversationForBooking(Booking booking) {
+        try {
+            // Create conversation data
+            Map<String, Object> conversationData = new HashMap<>();
+            conversationData.put("bookingId", booking.getId());
+            conversationData.put("customerId", booking.getCustomerId());
+            conversationData.put("contractorId", booking.getContractorId());
+
+            // The restTemplate is already injected and configured with auth
+            String createUrl = "http://localhost:8084/api/conversations";
+
+            // Send request to create conversation
+            Map response = restTemplate.postForObject(createUrl, conversationData, Map.class);
+
+            log.info("Successfully created conversation for booking {}: {}", booking.getId(), response);
+
+        } catch (Exception e) {
+            // Check if conversation already exists (409 Conflict or similar)
+            if (e.getMessage() != null && e.getMessage().contains("already exists")) {
+                log.info("Conversation already exists for booking: {}", booking.getId());
+            } else {
+                log.error("Error creating conversation for booking {}: {}", booking.getId(), e.getMessage());
+            }
+            // Don't throw - we don't want to fail the booking acceptance
+        }
     }
 
     @Transactional

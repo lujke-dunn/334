@@ -5,7 +5,7 @@ import DashboardSidebar from './DashboardSidebar';
 import DashboardHeader from './DashboardHeader';
 import CustomerDashboard from './CustomerDashboard';
 import ContractorDashboard from './ContractorDashboard/ContractorDashboard';
-import ChatComponent from './Chat/ChatComponent';
+import ChatApp from './Chat/ChatApp';
 import CreateServiceModal from './Modals/CreateServiceModal';
 import '../../styles/Dashboard.css';
 import CustomerBookings from '../CustomerBooking';
@@ -434,13 +434,7 @@ const Dashboard = () => {
           );
         }
       case 'chat':
-        return (
-            <ChatComponent
-                userRole={userRole}
-                currentUserId={userProfile.id}
-                currentUserName={userProfile.name}
-            />
-        );
+        return <ChatApp />;
       case 'profile':
         return <div>Profile content coming soon...</div>;
       default:
